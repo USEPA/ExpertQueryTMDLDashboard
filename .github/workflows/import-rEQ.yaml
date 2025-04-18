@@ -1,0 +1,38 @@
+# based on https://rfortherestofus.com/2023/05/github-actions
+name: import data
+on:
+  push:
+  schedule:
+    - cron: '07 10 * * 1' # This runs every Monday at 10 AM (0 minutes, 10 hours, every day of the month, every month, Monday (1))
+
+permissions: write-all
+
+jobs:
+  import-data:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up R
+        uses: r-lib/actions/setup-r@v2
+
+      - name: Install packages
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::dplyr
+            any::jsonlite
+            any::lubridate
+            any::rExpertQuery
+
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      - name: Import org data
+        run: Rscript -e 'source("R/ImportEQdata.R")'
+
+      - name: Commit results
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add EQ_data.RData
+          git commit -m 'Data updated' || echo "No changes to commit"
+          git push origin || echo "No changes to commit"
