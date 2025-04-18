@@ -26,7 +26,7 @@ jobs:
           Rscript -e "install.packages('remotes')"
       - name: Install package rExpertQuery from GitHub
         with:
-          token: ${{ secrets.MY_PAT }}
+          token: ${{ secrets.pat }}
         run: |
           Rscript -e "remotes::install_github('USEPA/rExpertQuery', dependencies = TRUE)"
 
