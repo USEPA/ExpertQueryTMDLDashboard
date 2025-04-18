@@ -1,0 +1,602 @@
+library(shiny)
+library(shinyjs)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(bslib)
+library(scales)
+library(shinythemes)
+
+load("EQ_data.RData")
+
+# UI
+ui <- page_sidebar(
+  # url options
+  tags$head(
+    tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropogation(); });"))
+  ),
+  # title and update information
+  title = div(
+    tags$h1("TDML Summary Dashboard Draft", style = "margin-bottom: 0;"),
+    br(),
+    tags$h6(htmlOutput("update"))
+  ),
+  # create sidebar for user inputs
+  sidebar = sidebar(
+    sliderInput("year", "Year:", min = 1995, max = max_year, value = c(1995, max_year), sep = ""),
+    selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
+    selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
+    selectInput("pollgroup", "Pollutant Group:", choices = sort(unique(pollutants_groups$pollutantGroup)), selected = NULL, multiple = TRUE),
+    selectInput("pollutant", "Pollutant:", choices = sort(unique(pollutants_groups$pollutant)), selected = NULL, multiple = TRUE),
+    selectInput("addparam", "Addressed Parameter:", choices = sort(unique(parameters$addressedParameter)), selected = NULL, multiple = TRUE),
+    actionButton("update", "Update"),
+    actionButton("clear", "Clear")
+  ),
+  # create tabs
+  navset_card_underline(
+    # title for all tabs
+    title = "Tabs:",
+    # create filtered results panel
+    nav_panel(
+      "Summary",
+      tags$h4(htmlOutput("tmdl1")),
+      # tags$h4(htmlOutput("tmdl2")),
+      tags$h5(htmlOutput("cwa"))
+    ),
+    nav_panel(
+      "Filtered TMDL Results",
+      downloadButton("download_df", "Download Data"),
+      DTOutput("table")
+    ),
+    # create tmdl production history tab
+    nav_panel(
+      "TMDL Production History",
+      # add bar graph panel
+      accordion(
+        accordion_panel(
+          title = "Bar Graph",
+          icon = bsicons::bs_icon("graph-up"),
+          plotly::plotlyOutput("historyplot")
+        ),
+        # add data table panel
+        accordion_panel(
+          title = "Data Table",
+          icon = bsicons::bs_icon("table"),
+          downloadButton("download_prodhist", "Download Data"),
+          DTOutput("prodhist")
+        )
+      )
+    ),
+    # create annual tmdl production panel
+    nav_panel(
+      "Annual TMDL Production",
+      # add bar graph panel
+      accordion(
+        accordion_panel(
+          title = "Bar Graph",
+          icon = bsicons::bs_icon("bar-chart"),
+          plotly::plotlyOutput("annual")
+        ),
+        # add data table panel
+        accordion_panel(
+          title = "Data Table",
+          icon = bsicons::bs_icon("table"),
+          downloadButton("download_annual", "Download Data"),
+          DTOutput("annualtable")
+        )
+      )
+    ),
+    # create pollutant panel
+    nav_panel(
+      "Pollutants",
+      # add pie graph panel
+      accordion(
+        accordion_panel(
+          title = "Pie Graph",
+          icon = bsicons::bs_icon("pie-chart"),
+          plotly::plotlyOutput("pie"), uiOutput("back")
+        ),
+        # add data table panel
+        accordion_panel(
+          title = "Data Table",
+          icon = bsicons::bs_icon("table"),
+          downloadButton("download_pollutant", "Download Data"),
+          DTOutput("pietable")
+        )
+      )
+    ),
+    # create tmdls by state pnale
+    nav_panel(
+      "TMDLs By State",
+      # add bar graph panel
+      accordion(
+        accordion_panel(
+          title = "Bar Graph",
+          icon = bsicons::bs_icon("bar-chart"),
+          plotly::plotlyOutput("bystate")
+        ),
+        # add data table panel
+        accordion_panel(
+          title = "Data Table",
+          icon = bsicons::bs_icon("table"),
+          downloadButton("download_state", "Download Data"),
+          DTOutput("statetable")
+        )
+      )
+    )
+  )
+)
+
+
+# Server
+server <- function(input, output, session) {
+  # force links to open in browser
+  options(shiny.launch.browser = TRUE)
+
+  # create dynamic filter so region selection will limit states available
+  observe({
+    selected_region <- input$region
+    if (is.null(selected_region) || length(selected_region) == 0) {
+      updateSelectInput(session, "state", choices = sort(unique(states_regions$state)))
+    } else {
+      filtered_states <- sort(unique(states_regions$state[states_regions$region %in% selected_region]))
+      updateSelectInput(session, "state", choices = filtered_states)
+    }
+  })
+
+
+  # create dynamic filter so pollutant group selection will limit pollutants available
+  observe({
+    selected_pollgroup <- input$pollgroup
+    if (is.null(selected_pollgroup) || length(selected_pollgroup) == 0) {
+      updateSelectInput(session, "pollutant", choices = sort(unique(pollutants_groups$pollutant)))
+    } else {
+      filtered_pollutants <- sort(unique(pollutants_groups$POLLUTANT[pollutants_groups$pollutantGroup %in% selected_pollgroup]))
+      updateSelectInput(session, "pollutant", choices = filtered_pollutants)
+    }
+  })
+
+
+  # create reactive df for plots and tables
+  reactive_df <- reactiveVal(df)
+
+  # create original df so underlying data for app can be reset
+  original_df <- reactiveVal(df)
+
+  # update reactive df based on user inputs
+  observeEvent(input$update, {
+    temp_df <- original_df()
+
+    if (!is.null(input$year)) {
+      temp_df <- temp_df[temp_df$fiscalYearEstablished >= input$year[1] & temp_df$fiscalYearEstablished <= input$year[2], ]
+    }
+
+    if (!is.null(input$region) && length(input$region) > 0) {
+      temp_df <- temp_df[temp_df$region %in% input$region, ]
+    }
+
+    if (!is.null(input$state) && length(input$state) > 0) {
+      temp_df <- temp_df[temp_df$state %in% input$state, ]
+    }
+
+    if (!is.null(input$pollgroup) && length(input$pollgroup) > 0) {
+      temp_df <- temp_df[temp_df$pollutantGroup %in% input$pollgroup, ]
+    }
+
+    if (!is.null(input$pollutant) && length(input$pollutant) > 0) {
+      temp_df <- temp_df[temp_df$pollutant %in% input$pollutant, ]
+    }
+
+    if (!is.null(input$addparam) && length(input$addparam) > 0) {
+      params <- parameters %>%
+        dplyr::filter(addressedParameter %in% input$addparam)
+
+      temp_df <- temp_df[temp_df$addressedParameters %in% params$addressedParameters, ]
+    }
+
+
+    reactive_df(temp_df)
+  })
+
+  # reset reactive df to original df (remove all user inputs)
+  observeEvent(input$clear, {
+    reactive_df(df)
+    original_df(df)
+
+    updateSliderInput(session, "year", min = 1995, max = max_year, value = c(1995, max_year))
+
+    updateSelectInput(session, "region", selected = "")
+
+    updateSelectInput(session, "state", selected = "")
+
+    updateSelectInput(session, "pollgroup", selected = "")
+
+    updateSelectInput(session, "pollutant", selected = "")
+  })
+
+  # create output table for filtered (by user input) tmdls for 'Filtered TMDL Results' tab
+  output$table <- renderDT({
+    datatable(
+      reactive_df() %>%
+        dplyr::mutate(planSummaryLink = paste0('<a href="', planSummaryLink, '" target="_blank">', planSummaryLink, "</a>")) %>%
+        dplyr::rename(
+          Region = region,
+          State = state,
+          "Fiscal Year Established" = fiscalYearEstablished,
+          Pollutant = pollutant,
+          "Pollutant Group" = pollutantGroup,
+          "Action ID" = actionId,
+          "Assessment Unit ID" = assessmentUnitId,
+          "Plan Summary Link" = planSummaryLink
+        ) %>%
+        dplyr::distinct(),
+      filter = "top",
+      escape = FALSE,
+      extensions = "FixedHeader"
+    )
+  })
+
+
+  # date update
+  output$update <- renderText({
+    paste0(" The Expert Query National TMDL Profile was last updated on ", update.tmdls, ".")
+  })
+
+  # tmdls version one
+  output$tmdl1 <- renderText({
+    count <- reactive_df() %>%
+      dplyr::select(assessmentUnitId, pollutant, actionId) %>%
+      dplyr::n_distinct() %>%
+      formatC(big.mark = ",")
+
+    paste0(
+      "In this filtered data set there are : ", "<br>",
+      "<b>", count, "</b>",
+      " unique combinations of actionId, assessmentUnitId, and pollutant"
+    )
+  })
+
+  # # tmdls version two
+  # output$tmdl2 = renderText({
+  #   count <- reactive_df() %>%
+  #     dplyr::select(assessmentUnitId, pollutant) %>%
+  #     dplyr::n_distinct() %>%
+  #     formatC(big.mark = ",")
+  #
+  #   paste0("<b>", count, "</b>", " unique combinations of assessmentUnitId and pollutant")
+  # })
+
+  # count explanation cwa
+  output$cwa <- renderText({
+    paste0(
+      "<b>", "TMDL Entries in ATTAINS", "</b>", "<br>", "<br>",
+      "EPA has responsibilities for ensuring the development and implementation of pollution targets,",
+      " known as total maximum daily loads (TMDL). ",
+      "A TMDL is the sum of the individual Wasteload allocations (WLAs) for point sources[1], ",
+      "load allocations (LAs) for non-point sources[2] and natural background. ",
+      "In other words, the TMDL is a numeric target for a specific pollutant, ",
+      "reflecting the maximum amount of the pollutant that a water body can contain and still be ",
+      "considered in compliance with water quality standards. ",
+      "How a TMDL calculation or formula is developed to address one pollutant in one waterbody ",
+      "has expanded over time and varies significantly across state and EPA Region. ",
+      "Overall, however, developing a TMDL results in a planning document that is uploaded in ",
+      "ATTAINS that, when implemented, should lead to waterbodies meeting water quality standards. ",
+      "Today, the ATTAINS system serves as the national repository for approved Total Maximum Daily ",
+      "Load (TMDL) documents and other accepted plans (i.e., “4B Restoration Approaches,” ",
+      "“Alternative Restoration Approaches” and “Protection” plans).  ",
+      "While key documents and metadata uploaded to ATTAINS are not equivalent to official TMDL ",
+      "records maintained for regulatory or legal purposes, complete submission of Action Entries ",
+      "into ATTAINS fosters transparency of data across states. ",
+      "Approaches for ATTAINS-based TMDL tracking and reporting can notably impact the number of ",
+      "unique TMDLs that result, as well as the interpretation of water quality progress ",
+      "nationally.[3] ",
+      "Users are encouraged to review the official TMDL planning documentation submitted for ",
+      "EPA Action. ",
+      "At the national level, EPA’s method for counting TMDLs using ATTAINS is as follows:", "<br>",
+      "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>",
+      "It is expected that TMDL reports and other Action in ATTAINS will contain consistent Action ",
+      "information for the public benefit and ensure accurate performance measures calculations ",
+      "for EPA."
+    )
+  })
+
+  # create download button for filtered tmdl results tab
+  output$download_df <- downloadHandler(
+    filename = function() {
+      paste("filtered_TMDLs", format(Sys.Date(), "_%m_%d_%Y"), ".csv", sep = "")
+    },
+    content = function(file) {
+      utils::write.csv(reactive_df(), file)
+    }
+  )
+
+  # create reactive df to count annual and cummulative tmdls
+  count_df <- reactive({
+    df <- reactive_df() %>%
+      dplyr::select(state, fiscalYearEstablished, pollutant, assessmentUnitId, actionId) %>%
+      dplyr::distinct() %>%
+      dplyr::group_by(fiscalYearEstablished) %>%
+      dplyr::summarize(TMDLCOUNT = length(pollutant)) %>%
+      tidyr::complete(fiscalYearEstablished = tidyr::full_seq(input$year[1]:input$year[2], 1)) %>%
+      dplyr::filter(!is.na(fiscalYearEstablished)) %>%
+      dplyr::arrange(fiscalYearEstablished) %>%
+      dplyr::mutate(
+        TMDLCOUNT = ifelse(is.na(TMDLCOUNT), 0, TMDLCOUNT),
+        CUMMULATIVETMDLS = cumsum(TMDLCOUNT)
+      )
+
+    return(df)
+  })
+
+
+
+  # create reactive value for pollutant group selection (user input) to use in "Pollutants" tab plot and table
+  current_category <- reactiveVal()
+
+  # observe user click to select category (pollutant group)
+  observe({
+    cd <- event_data("plotly_click")$customdata[[1]]
+    if (isTRUE(cd %in% categories)) current_category(cd)
+  })
+
+  # create reactive df to count tmdls by pollutant group, unless a pollutant group is selected to use for "Pollutants" plot and table
+  pies_data <- reactive({
+    if (!length(current_category())) {
+      return(dplyr::count(reactive_df(), pollutantGroup))
+    }
+    # if pollutant group is selected, count by pollutant
+    reactive_df() %>%
+      dplyr::filter(pollutantGroup %in% current_category()) %>%
+      dplyr::count(pollutant)
+  })
+
+  # create download button for pollutant results tab
+  output$download_pollutant <- downloadHandler(
+    filename = function() {
+      paste("pollutant", format(Sys.Date(), "_%m_%d_%Y"), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(pies_data(), file)
+    }
+  )
+
+  # create data table for "Pollutants" tab
+  output$pietable <- renderDT({
+    if (!length(current_category())) {
+      pie.df <- pies_data() %>%
+        dplyr::rename(
+          "Pollutant Group" = pollutantGroup,
+          "TMDL Count" = n
+        )
+    }
+
+    if (length(current_category())) {
+      pie.df <- pies_data() %>%
+        dplyr::rename(
+          "Pollutant" = pollutant,
+          "TMDL Count" = n
+        )
+    }
+
+    datatable(pie.df,
+      escape = FALSE
+    )
+  })
+
+
+  # create dynamic pie chart for "Pollutants" tab
+  output$pie <- renderPlotly({
+    poll_select <- current_category()
+
+    d <- setNames(pies_data(), c("labels", "values")) %>%
+      dplyr::mutate(
+        percent = round(values / sum(values), 5),
+        labs_w_vals = paste(labels, " (", scales::comma(values), ")", sep = "")
+      )
+
+
+    pie_plot <- plotly::plot_ly(
+      data = d,
+      labels = ~labs_w_vals,
+      values = ~values,
+      type = "pie",
+      textinfo = "none",
+      hoverinfo = "label+value+percent",
+      customdata = ~labels
+    ) %>%
+      plotly::layout(
+        title = list(
+          text = ifelse(is.null(poll_select),
+            "TMDLs by Pollutant Group",
+            paste("TMDLS by Pollutant for ", poll_select, sep = "")
+          ),
+          x = 0.5,
+          xanchor = "center",
+          yanchor = "bottom",
+          xref = "paper",
+          yref = "paper",
+          y = 1.2
+        ),
+        annotations = list(
+          x = 0.5,
+          y = -0.4,
+          xref = "paper",
+          yref = "paper",
+          showarrow = FALSE,
+          text = ifelse(is.null(poll_select),
+            "click on a Pollutant Group in Plot <br> to see the relative contribution of its Pollutants",
+            ""
+          )
+        ),
+        margin = list(b = 100, t = 100),
+        showlegend = TRUE
+      ) %>%
+      event_register("plotly_click")
+
+    return(pie_plot)
+  })
+
+
+
+  # create back button for pollutant pie chart
+  output$back <- renderUI({
+    if (length(current_category())) {
+      actionButton("reset", "Back to TMDLS by Pollutant Group", icon("chevron-left"))
+    }
+  })
+
+  # observe clear for current category for pollutants
+  observeEvent(input$reset, current_category(NULL))
+
+
+  # create annaul tmdls plot
+  output$annual <- renderPlotly({
+    bar_annual <- plotly::plot_ly(count_df(), x = ~fiscalYearEstablished, y = ~TMDLCOUNT, type = "bar") %>%
+      plotly::layout(
+        title = "TMDLS Produced Per Year",
+        xaxis = list(title = "Fiscal Year"),
+        yaxis = list(title = "Number of TMDLs Produced")
+      )
+
+    bar_annual
+  })
+
+  # create reactive df for annual tmdls
+  annual_data <- reactive({
+    count_df() %>%
+      dplyr::select(fiscalYearEstablished, TMDLCOUNT) %>%
+      dplyr::rename(
+        "Fiscal Year Established" = fiscalYearEstablished,
+        "TMDL Count" = TMDLCOUNT
+      )
+  })
+
+  # create annual tmdls table
+  output$annualtable <- renderDT({
+    datatable(
+      data = annual_data(),
+      escape = FALSE
+    )
+  })
+
+  # create download button for annual tmdl results tab
+  output$download_annual <- downloadHandler(
+    filename = function() {
+      paste("annual_TMDLs", format(Sys.Date(), "_%m_%d_%Y"), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(annual_data(), file)
+    }
+  )
+
+  # create reactive df for production history
+  prod_data <- reactive({
+    count_df() %>%
+      dplyr::select(fiscalYearEstablished, TMDLCOUNT, CUMMULATIVETMDLS) %>%
+      dplyr::rename(
+        "Fiscal Year Established" = fiscalYearEstablished,
+        "Annual TMDL Count" = TMDLCOUNT,
+        "Cummulative TMDL Count" = CUMMULATIVETMDLS
+      )
+  })
+
+  # create production history data table
+  output$prodhist <- renderDT({
+    datatable(prod_data(),
+      escape = FALSE
+    )
+  })
+
+  # create download button for production history results tab
+  output$download_prodhist <- downloadHandler(
+    filename = function() {
+      paste("productionhist_TMDLs", format(Sys.Date(), "_%m_%d_%Y"), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(reactive_df(), file)
+    }
+  )
+
+
+  # create reactive state/tmdls data frame
+  state_df <- reactive({
+    reactive_df() %>%
+      dplyr::select(state, fiscalYearEstablished, pollutant, assessmentUnitId, actionId) %>%
+      dplyr::distinct() %>%
+      dplyr::group_by(state) %>%
+      dplyr::arrange(state) %>%
+      dplyr::tally()
+  })
+
+  # create data table for state and tmdl counts
+  output$statetable <- renderDT({
+    datatable(
+      state_df() %>%
+        dplyr::rename(
+          "TMDL Count" = n,
+          "State" = state
+        ),
+      escape = FALSE
+    )
+  })
+
+  # create state tmdl count bar plot
+  output$bystate <- renderPlotly({
+    df <- state_df()
+
+    plot <- plotly::plot_ly(df,
+      x = ~n,
+      y = ~state,
+      type = "bar",
+      text = ~state,
+      textposition = "outside"
+    ) %>%
+      plotly::layout(
+        title = "TMDLs by State",
+        yaxis = list(
+          title = "State",
+          showticklabels = FALSE
+        ),
+        xaxis = list(title = "Number of TMDLs")
+      )
+
+    plot
+  })
+
+  # create stacked area plot for annual and cummulative tmdls
+  output$historyplot <- renderPlotly({
+    df <- count_df()
+
+    plot <- plotly::plot_ly(
+      x = ~ df$fiscalYearEstablished,
+      y = ~ df$CUMMULATIVETMDLS,
+      type = "scatter",
+      mode = "none",
+      fill = "tonexty",
+      fillcolor = "#D55E00",
+      name = "Cummulative TMDLs"
+    ) %>%
+      plotly::add_trace(
+        x = ~ df$fiscalYearEstablished,
+        y = ~ df$TMDLCOUNT,
+        type = "scatter",
+        mode = "none",
+        fill = "tozeroy",
+        fillcolor = "#0072B2",
+        name = "Annual TMDLs"
+      ) %>%
+      plotly::layout(
+        title = list(
+          text = "Annual TMDL Production",
+          xref = "paper",
+          anchor = "center"
+        ),
+        xaxis = list(title = "Fiscal Year Established"),
+        yaxis = list(title = "Number of TMDLs")
+      )
+    plot
+  })
+}
+
+# Run the app
+shinyApp(ui = ui, server = server)
