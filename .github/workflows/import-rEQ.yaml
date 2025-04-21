@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GITHUB_PAT: GITHUB_PAT ${{ secrets.GITHUB_TOKEN }} 
-      steps:
+    steps:
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
