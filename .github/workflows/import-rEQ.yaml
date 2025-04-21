@@ -9,8 +9,7 @@ permissions: write-all
 jobs:
   import-data:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_PAT: GITHUB_PAT ${{ secrets.GITHUB_TOKEN }} 
+
     steps:
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
@@ -29,7 +28,7 @@ jobs:
           
       - name: Install package rExpertQuery from GitHub
         run: |
-          Rscript -e "remotes::install_github('USEPA/rExpertQuery', dependencies = TRUE)"
+          Rscript -e "remotes::install_github('USEPA/rExpertQuery')"
 
       - name: Check out repository
         uses: actions/checkout@v3
