@@ -22,10 +22,22 @@ jobs:
             any::jsonlite
             any::lubridate
             
-      - name: Install remotes
-        run: |
-          Rscript -e "install.packages('remotes')"
-          
+      - name: Install packages
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::remotes
+            any::dplyr
+            any::httr2
+            any::usethis
+            any::pkgdown
+            any::rcmdcheck
+            any::rversions
+            any::urlchecker
+            any::jsonlite
+            any::lubridate
+            any::devtools
+            
       - name: Install package rExpertQuery from GitHub
         run: |
           Rscript -e "remotes::install_github('USEPA/rExpertQuery@develop', dependencies = TRUE, Sys.getenv('GITHUB_PAT'))"
