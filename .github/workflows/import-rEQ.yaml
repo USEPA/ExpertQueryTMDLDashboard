@@ -18,14 +18,6 @@ jobs:
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: |
-            any::dplyr
-            any::jsonlite
-            any::lubridate
-            
-      - name: Install packages
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: |
             any::remotes
             any::dplyr
             any::httr2
