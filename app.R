@@ -6,6 +6,7 @@ library(plotly)
 library(bslib)
 library(scales)
 library(shinythemes)
+library(bsicons)
 
 load("EQ_data.RData")
 
@@ -39,9 +40,16 @@ ui <- page_sidebar(
     # create filtered results panel
     nav_panel(
       "Summary",
-      tags$h4(htmlOutput("tmdl1")),
-      # tags$h4(htmlOutput("tmdl2")),
-      tags$h5(htmlOutput("cwa"))
+      accordion(
+        accordion_panel(
+            title = "TMDL Count",
+            tags$h4(htmlOutput("tmdl1"))),
+        accordion_panel(
+            title = "More Information About TMDLs",
+            accordion_panel(
+              title = "TMDLs in ATTAINS",
+            tags$h4(htmlOutput("tmdl2")),
+            tags$h5())))
     ),
     nav_panel(
       "Filtered TMDL Results",
@@ -252,7 +260,7 @@ server <- function(input, output, session) {
     paste0(
       "In this filtered data set there are : ", "<br>",
       "<b>", count, "</b>",
-      " unique combinations of actionId, assessmentUnitId, and pollutant"
+      " TMDLs (unique combinations of actionId, assessmentUnitId, and pollutant)."
     )
   })
 
