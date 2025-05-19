@@ -18,7 +18,7 @@ ui <- page_sidebar(
   ),
   # title and update information
   title = div(
-    tags$h1("TDML Summary Dashboard Draft", style = "margin-bottom: 0;"),
+    tags$h1("National Summary of TMDLs in ATTAINS", style = "margin-bottom: 0;"),
     br(),
     tags$h6(htmlOutput("update"))
   ),
@@ -44,12 +44,9 @@ ui <- page_sidebar(
         accordion_panel(
             title = "TMDL Count",
             tags$h4(htmlOutput("tmdl1"))),
-        accordion_panel(
-            title = "More Information About TMDLs",
-            accordion_panel(
-              title = "TMDLs in ATTAINS",
-            tags$h4(htmlOutput("tmdl2")),
-            tags$h5())))
+          accordion_panel(
+            title = "Description",
+            tags$h4(htmlOutput("cwa"))))
     ),
     nav_panel(
       "Filtered TMDL Results",
@@ -134,6 +131,8 @@ ui <- page_sidebar(
     )
   )
 )
+
+
 
 
 # Server
@@ -277,34 +276,17 @@ server <- function(input, output, session) {
   # count explanation cwa
   output$cwa <- renderText({
     paste0(
-      "<b>", "TMDL Entries in ATTAINS", "</b>", "<br>", "<br>",
-      "EPA has responsibilities for ensuring the development and implementation of pollution targets,",
-      " known as total maximum daily loads (TMDL). ",
-      "A TMDL is the sum of the individual Wasteload allocations (WLAs) for point sources[1], ",
-      "load allocations (LAs) for non-point sources[2] and natural background. ",
-      "In other words, the TMDL is a numeric target for a specific pollutant, ",
-      "reflecting the maximum amount of the pollutant that a water body can contain and still be ",
-      "considered in compliance with water quality standards. ",
-      "How a TMDL calculation or formula is developed to address one pollutant in one waterbody ",
-      "has expanded over time and varies significantly across state and EPA Region. ",
-      "Overall, however, developing a TMDL results in a planning document that is uploaded in ",
-      "ATTAINS that, when implemented, should lead to waterbodies meeting water quality standards. ",
-      "Today, the ATTAINS system serves as the national repository for approved Total Maximum Daily ",
-      "Load (TMDL) documents and other accepted plans (i.e., “4B Restoration Approaches,” ",
-      "“Alternative Restoration Approaches” and “Protection” plans).  ",
-      "While key documents and metadata uploaded to ATTAINS are not equivalent to official TMDL ",
-      "records maintained for regulatory or legal purposes, complete submission of Action Entries ",
-      "into ATTAINS fosters transparency of data across states. ",
-      "Approaches for ATTAINS-based TMDL tracking and reporting can notably impact the number of ",
-      "unique TMDLs that result, as well as the interpretation of water quality progress ",
-      "nationally.[3] ",
-      "Users are encouraged to review the official TMDL planning documentation submitted for ",
-      "EPA Action. ",
+      "Under section 303(d) of the CWA, EPA approves or disapproves state submissions of ",
+      "Total Maximum Daily Loads (TMDLs) for impaired waters. A TMDL is the sum of the ",
+      "individual Wasteload allocations (WLAs) for point sources , load allocations (LAs) for ",
+      "non-point sources and natural background.",
+      "href='https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2', 
+           '40 C.F.R. 130.2(i).'", "<br>",
       "At the national level, EPA’s method for counting TMDLs using ATTAINS is as follows:", "<br>",
       "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>",
-      "It is expected that TMDL reports and other Action in ATTAINS will contain consistent Action ",
-      "information for the public benefit and ensure accurate performance measures calculations ",
-      "for EPA."
+      "Data Source: ",
+      "href='https://owapps.epa.gov/expertquery/national-downloads', 
+           'Expert Query National Downloads'"
     )
   })
 
