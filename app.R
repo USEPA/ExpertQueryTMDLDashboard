@@ -24,6 +24,10 @@ ui <- page_sidebar(
   ),
   # create sidebar for user inputs
   sidebar = sidebar(
+    radioButtons("counttype", "Method for Counting TMDLs", choices = list(
+      "By unique combinations of assessmentUnitId, and pollutant" = "waterbody",
+      "By unique combinations of actionId, assessmentUnitId, and pollutant" = "actionId"),
+      selected = "waterbody"),
     sliderInput("year", "Year:", min = 1995, max = max_year, value = c(1995, max_year), sep = ""),
     selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
     selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
@@ -209,6 +213,8 @@ server <- function(input, output, session) {
   observeEvent(input$clear, {
     reactive_df(df)
     original_df(df)
+    
+    #updateCheckboxInput(session, "counttype", selected = "waterbody")
 
     updateSliderInput(session, "year", min = 1995, max = max_year, value = c(1995, max_year))
 
