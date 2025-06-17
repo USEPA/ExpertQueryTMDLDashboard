@@ -24,9 +24,9 @@ ui <- page_sidebar(
   ),
   # create sidebar for user inputs
   sidebar = sidebar(
-    radioButtons("counttype", "Method for Counting TMDLs", choices = list(
-      "By unique combinations of assessmentUnitId, and pollutant" = "waterbody",
-      "By unique combinations of actionId, assessmentUnitId, and pollutant" = "actionId"),
+    radioButtons("counttype", "Method for Counting TMDLs:", choices = list(
+      "By unique combinations of assessmentUnitId and pollutant" = "waterbody",
+      "By unique combinations of actionId, assessmentUnitId and pollutant" = "actionId"),
       selected = "waterbody"),
     sliderInput("year", "Year:", min = 1995, max = max_year, value = c(1995, max_year), sep = ""),
     selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
@@ -176,6 +176,15 @@ server <- function(input, output, session) {
 
   # update reactive df based on user inputs
   observeEvent(input$update, {
+    
+    if(input$counttype == "waterbody"
+    ) {
+      temp_df <- temp_df %>%
+        dplyr::group_by(pollutant, assessmentUnitId) %>%
+        dplyr::slice_max(fiscalYearEstablished)
+  
+    }
+    
     temp_df <- original_df()
 
     if (!is.null(input$year)) {
