@@ -24,10 +24,6 @@ ui <- page_sidebar(
   ),
   # create sidebar for user inputs
   sidebar = sidebar(
-    radioButtons("counttype", "Method for Counting TMDLs:", choices = list(
-      "By unique combinations of assessmentUnitId and pollutant" = "waterbody",
-      "By unique combinations of actionId, assessmentUnitId and pollutant" = "actionId"),
-      selected = "waterbody"),
     sliderInput("year", "Year:", min = 1995, max = max_year, value = c(1995, max_year), sep = ""),
     selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
     selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
@@ -177,14 +173,6 @@ server <- function(input, output, session) {
   # update reactive df based on user inputs
   observeEvent(input$update, {
     
-    if(input$counttype == "waterbody"
-    ) {
-      temp_df <- temp_df %>%
-        dplyr::group_by(pollutant, assessmentUnitId) %>%
-        dplyr::slice_max(fiscalYearEstablished)
-  
-    }
-    
     temp_df <- original_df()
 
     if (!is.null(input$year)) {
@@ -270,39 +258,38 @@ server <- function(input, output, session) {
       dplyr::select(assessmentUnitId, pollutant, actionId) %>%
       dplyr::n_distinct() %>%
       formatC(big.mark = ",")
+    
+    count2 <- reactive_df() %>%
+      dplyr::select(assessmentUnitId, pollutant) %>%
+      dplyr::n_distinct() %>%
+      formatC(big.mark = ",")
 
     paste0(
-      "In this filtered data set there are : ", "<br>",
+      "In this filtered data set there are : ", "<br>", "<br>",
       "<b>", count, "</b>",
-      " TMDLs (unique combinations of actionId, assessmentUnitId, and pollutant)."
+      "  unique combinations of actionId, assessmentUnitId and pollutant", "<br>",
+      "<b>", count2, "</b>",
+      " unique combinations of assessmentUnitId and pollutant", "<br>", "<br>",
+      "All of the other tabs in this dashboard count TMDLs as unique combinations of ",
+      "actionId, assessmentUnitId and pollutant"
     )
   })
 
-  # # tmdls version two
-  # output$tmdl2 = renderText({
-  #   count <- reactive_df() %>%
-  #     dplyr::select(assessmentUnitId, pollutant) %>%
-  #     dplyr::n_distinct() %>%
-  #     formatC(big.mark = ",")
-  #
-  #   paste0("<b>", count, "</b>", " unique combinations of assessmentUnitId and pollutant")
-  # })
-
   # count explanation cwa
   output$cwa <- renderText({
-    paste0(
+    HTML(paste0(
       "Under section 303(d) of the CWA, EPA approves or disapproves state submissions of ",
       "Total Maximum Daily Loads (TMDLs) for impaired waters. A TMDL is the sum of the ",
       "individual Wasteload allocations (WLAs) for point sources , load allocations (LAs) for ",
-      "non-point sources and natural background.",
-      "href='https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2', 
-           '40 C.F.R. 130.2(i).'", "<br>",
+      "non-point sources and natural background (",
+      '<a href="', 'https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2', '" target="_blank">', 
+      '40 C.F.R. 130.2(i)', '</a>',  ").", "<br>", "<br>",
       "At the national level, EPA’s method for counting TMDLs using ATTAINS is as follows:", "<br>",
-      "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>",
+      "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>", "<br>",
       "Data Source: ",
-      "href='https://owapps.epa.gov/expertquery/national-downloads', 
-           'Expert Query National Downloads'"
-    )
+      '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">', 
+      'Expert Query National Downloads', '</a>'
+    ))
   })
 
   # create download button for filtered tmdl results tab
