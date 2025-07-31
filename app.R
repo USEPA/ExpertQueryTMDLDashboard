@@ -6,6 +6,7 @@ library(plotly)
 library(bslib)
 library(scales)
 library(shinythemes)
+library(bsicons)
 
 load("EQ_data.RData")
 
@@ -17,7 +18,7 @@ ui <- page_sidebar(
   ),
   # title and update information
   title = div(
-    tags$h1("TDML Summary Dashboard Draft", style = "margin-bottom: 0;"),
+    tags$h1("National Summary of TMDLs in ATTAINS", style = "margin-bottom: 0;"),
     br(),
     tags$h6(htmlOutput("update"))
   ),
@@ -39,9 +40,13 @@ ui <- page_sidebar(
     # create filtered results panel
     nav_panel(
       "Summary",
-      tags$h4(htmlOutput("tmdl1")),
-      # tags$h4(htmlOutput("tmdl2")),
-      tags$h5(htmlOutput("cwa"))
+      accordion(
+        accordion_panel(
+            title = "TMDL Count",
+            tags$h4(htmlOutput("tmdl1"))),
+          accordion_panel(
+            title = "Description",
+            tags$h4(htmlOutput("cwa"))))
     ),
     nav_panel(
       "Filtered TMDL Results",
@@ -128,6 +133,8 @@ ui <- page_sidebar(
 )
 
 
+
+
 # Server
 server <- function(input, output, session) {
   # force links to open in browser
@@ -165,6 +172,7 @@ server <- function(input, output, session) {
 
   # update reactive df based on user inputs
   observeEvent(input$update, {
+    
     temp_df <- original_df()
 
     if (!is.null(input$year)) {
@@ -202,6 +210,8 @@ server <- function(input, output, session) {
   observeEvent(input$clear, {
     reactive_df(df)
     original_df(df)
+    
+    #updateCheckboxInput(session, "counttype", selected = "waterbody")
 
     updateSliderInput(session, "year", min = 1995, max = max_year, value = c(1995, max_year))
 
@@ -248,56 +258,38 @@ server <- function(input, output, session) {
       dplyr::select(assessmentUnitId, pollutant, actionId) %>%
       dplyr::n_distinct() %>%
       formatC(big.mark = ",")
+    
+    count2 <- reactive_df() %>%
+      dplyr::select(assessmentUnitId, pollutant) %>%
+      dplyr::n_distinct() %>%
+      formatC(big.mark = ",")
 
     paste0(
-      "In this filtered data set there are : ", "<br>",
+      "In this filtered data set there are : ", "<br>", "<br>",
       "<b>", count, "</b>",
-      " unique combinations of actionId, assessmentUnitId, and pollutant"
+      "  unique combinations of actionId, assessmentUnitId and pollutant", "<br>",
+      "<b>", count2, "</b>",
+      " unique combinations of assessmentUnitId and pollutant", "<br>", "<br>",
+      "All of the other tabs in this dashboard count TMDLs as unique combinations of ",
+      "actionId, assessmentUnitId and pollutant"
     )
   })
 
-  # # tmdls version two
-  # output$tmdl2 = renderText({
-  #   count <- reactive_df() %>%
-  #     dplyr::select(assessmentUnitId, pollutant) %>%
-  #     dplyr::n_distinct() %>%
-  #     formatC(big.mark = ",")
-  #
-  #   paste0("<b>", count, "</b>", " unique combinations of assessmentUnitId and pollutant")
-  # })
-
   # count explanation cwa
   output$cwa <- renderText({
-    paste0(
-      "<b>", "TMDL Entries in ATTAINS", "</b>", "<br>", "<br>",
-      "EPA has responsibilities for ensuring the development and implementation of pollution targets,",
-      " known as total maximum daily loads (TMDL). ",
-      "A TMDL is the sum of the individual Wasteload allocations (WLAs) for point sources[1], ",
-      "load allocations (LAs) for non-point sources[2] and natural background. ",
-      "In other words, the TMDL is a numeric target for a specific pollutant, ",
-      "reflecting the maximum amount of the pollutant that a water body can contain and still be ",
-      "considered in compliance with water quality standards. ",
-      "How a TMDL calculation or formula is developed to address one pollutant in one waterbody ",
-      "has expanded over time and varies significantly across state and EPA Region. ",
-      "Overall, however, developing a TMDL results in a planning document that is uploaded in ",
-      "ATTAINS that, when implemented, should lead to waterbodies meeting water quality standards. ",
-      "Today, the ATTAINS system serves as the national repository for approved Total Maximum Daily ",
-      "Load (TMDL) documents and other accepted plans (i.e., “4B Restoration Approaches,” ",
-      "“Alternative Restoration Approaches” and “Protection” plans).  ",
-      "While key documents and metadata uploaded to ATTAINS are not equivalent to official TMDL ",
-      "records maintained for regulatory or legal purposes, complete submission of Action Entries ",
-      "into ATTAINS fosters transparency of data across states. ",
-      "Approaches for ATTAINS-based TMDL tracking and reporting can notably impact the number of ",
-      "unique TMDLs that result, as well as the interpretation of water quality progress ",
-      "nationally.[3] ",
-      "Users are encouraged to review the official TMDL planning documentation submitted for ",
-      "EPA Action. ",
+    HTML(paste0(
+      "Under section 303(d) of the CWA, EPA approves or disapproves state submissions of ",
+      "Total Maximum Daily Loads (TMDLs) for impaired waters. A TMDL is the sum of the ",
+      "individual Wasteload allocations (WLAs) for point sources , load allocations (LAs) for ",
+      "non-point sources and natural background (",
+      '<a href="', 'https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2', '" target="_blank">', 
+      '40 C.F.R. 130.2(i)', '</a>',  ").", "<br>", "<br>",
       "At the national level, EPA’s method for counting TMDLs using ATTAINS is as follows:", "<br>",
-      "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>",
-      "It is expected that TMDL reports and other Action in ATTAINS will contain consistent Action ",
-      "information for the public benefit and ensure accurate performance measures calculations ",
-      "for EPA."
-    )
+      "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>", "<br>",
+      "Data Source: ",
+      '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">', 
+      'Expert Query National Downloads', '</a>'
+    ))
   })
 
   # create download button for filtered tmdl results tab

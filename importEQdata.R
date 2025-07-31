@@ -31,33 +31,54 @@ if(check.api != 200) {
 if(check.api == 200) {
 orig.df <- rExpertQuery::EQ_NationalExtract("tmdl")
 
-df <- orig.df %>%
+# start by filtering to necessary cols
+filt.df <- orig.df %>%
+  dplyr::filter(!is.na(pollutant),
+                pollutant != "") %>%
   dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                 actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct() %>%
   dplyr::mutate(fiscalYearEstablished = as.numeric(fiscalYearEstablished)) %>%
   dplyr::group_by(actionId, assessmentUnitId, pollutant) %>%
-  dplyr::mutate(addressedParameters = paste(addressedParameter, collapse = "; ")) %>%
+  dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; ")) %>%
   dplyr::distinct() %>%
   dplyr::ungroup()
 
-rm(orig.df)
-
 # create df of parameters
-parameters <- df %>%
+parameters <- filt.df %>%
   dplyr::select(addressedParameter, addressedParameters) %>%
   distinct() %>%
   dplyr::arrange(addressedParameter)
 
-# remove addressedParameter from df
-df <- df %>%
+# create df for counting by action id/assessment unit/pollutant
+act.df <- filt.df %>%
   dplyr::select(-addressedParameter) %>%
-  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameters,  
-                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct()
 
+# create df for counting by assessment unit/pollutant
+wb.df <- orig.df %>%
+  dplyr::filter(!is.na(pollutant),
+                pollutant != "") %>%
+  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+  dplyr::distinct() %>%
+  dplyr::group_by(pollutant, assessmentUnitId, actionId) %>%
+  dplyr::mutate(addressedParameter = paste0(actionId, ": ", paste(addressedParameter, collapse = "; "))) %>%
+  dplyr::ungroup() %>%
+  dplyr::distinct() %>%
+  dplyr::group_by(pollutant, assessmentUnitId) %>%
+  dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; "),
+                actionIds = paste(unique(actionId), collapse = "\n"),
+                actionNames = paste(unique(actionName), collapse = "\n"),
+                planSummaryLinks = paste(unique(planSummaryLink), collapse = "\n")) %>%
+  dplyr::ungroup() %>%                
+  dplyr::select(-addressedParameter, -actionId, -actionName, -planSummaryLink) %>%
+  distinct()
+
+rm(orig.df)
+
 # create df of states and regions
-states_regions <- df %>%
+states_regions <- filt.df %>%
   dplyr::select(state, region) %>%
   dplyr::distinct() %>%
   dplyr::arrange(region, state)
@@ -106,7 +127,7 @@ update.tmdls <- update.df %>%
 
 # create .RData file
 
-save(df, states_regions, pollutants_groups, parameters, max_year, years_list, categories,
+save(act.df, wb.df, states_regions, pollutants_groups, parameters, max_year, years_list, categories,
      update.tmdls, file = "EQ_data.RData")
 }
 
