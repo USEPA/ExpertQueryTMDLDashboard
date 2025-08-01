@@ -4,7 +4,6 @@ library(jsonlite)
 library(lubridate)
 library(httr2)
 
-
 # check resposne before downloading
 base.url <- "https://cg-7343d0e5-571f-451f-971f-8aaaf971df7e.s3-us-gov-west-1.amazonaws.com/"
 
@@ -84,7 +83,7 @@ states_regions <- filt.df %>%
   dplyr::arrange(region, state)
 
 # create df of pollutants and groups
-pollutants_groups <- df %>%
+pollutants_groups <- filt.df %>%
   dplyr::select(pollutant, pollutantGroup) %>%
   dplyr::distinct() %>%
   dplyr::arrange(pollutantGroup, pollutant)
