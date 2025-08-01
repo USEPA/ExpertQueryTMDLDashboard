@@ -98,12 +98,12 @@ years_list <- seq(1995, as.numeric(format(Sys.Date(), "%Y")))
 categories <- unique(pollutants_groups$pollutantGroup)
 
 # create df of action names by state and region
-actions <- df %>%
+actions <- filt.df %>%
   dplyr::select(actionName, state, region) %>%
   dplyr::distinct()
 
 # create df of assessment unit names by state and region
-aus <- df %>%
+aus <- filt.df %>%
   dplyr::select(assessmentUnitName, state, region) %>%
   dplyr::distinct()
 
