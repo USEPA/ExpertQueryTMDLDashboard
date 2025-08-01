@@ -4,7 +4,6 @@ library(jsonlite)
 library(lubridate)
 library(httr2)
 
-
 # check resposne before downloading
 base.url <- "https://cg-7343d0e5-571f-451f-971f-8aaaf971df7e.s3-us-gov-west-1.amazonaws.com/"
 
@@ -84,7 +83,7 @@ states_regions <- filt.df %>%
   dplyr::arrange(region, state)
 
 # create df of pollutants and groups
-pollutants_groups <- df %>%
+pollutants_groups <- filt.df %>%
   dplyr::select(pollutant, pollutantGroup) %>%
   dplyr::distinct() %>%
   dplyr::arrange(pollutantGroup, pollutant)
@@ -99,12 +98,12 @@ years_list <- seq(1995, as.numeric(format(Sys.Date(), "%Y")))
 categories <- unique(pollutants_groups$pollutantGroup)
 
 # create df of action names by state and region
-actions <- df %>%
+actions <- filt.df %>%
   dplyr::select(actionName, state, region) %>%
   dplyr::distinct()
 
 # create df of assessment unit names by state and region
-aus <- df %>%
+aus <- filt.df %>%
   dplyr::select(assessmentUnitName, state, region) %>%
   dplyr::distinct()
 
