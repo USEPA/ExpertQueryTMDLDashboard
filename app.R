@@ -165,10 +165,10 @@ server <- function(input, output, session) {
 
 
   # create reactive df for plots and tables
-  reactive_df <- reactiveVal(df)
+  reactive_df <- reactiveVal(filt.df)
 
   # create original df so underlying data for app can be reset
-  original_df <- reactiveVal(df)
+  original_df <- reactiveVal(filt.df)
 
   # update reactive df based on user inputs
   observeEvent(input$update, {
@@ -208,8 +208,8 @@ server <- function(input, output, session) {
 
   # reset reactive df to original df (remove all user inputs)
   observeEvent(input$clear, {
-    reactive_df(df)
-    original_df(df)
+    reactive_df(filt.df)
+    original_df(filt.df)
     
     #updateCheckboxInput(session, "counttype", selected = "waterbody")
 

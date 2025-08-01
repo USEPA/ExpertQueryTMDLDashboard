@@ -126,7 +126,7 @@ update.tmdls <- update.df %>%
 
 # create .RData file
 
-save(act.df, wb.df, states_regions, pollutants_groups, parameters, max_year, years_list, categories,
+save(act.df, wb.df,filt.df, states_regions, pollutants_groups, parameters, max_year, years_list, categories,
      update.tmdls, file = "EQ_data.RData")
 }
 
