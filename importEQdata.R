@@ -54,13 +54,7 @@ act.df <- filt.df %>%
   dplyr::select(-addressedParameter) %>%
   dplyr::distinct()
 
-# create df for counting by assessment unit/pollutant
-wb.df <- orig.df %>%
-  dplyr::filter(!is.na(pollutant),
-                pollutant != "") %>%
-  dplyr::select(region, state, pollutant, pollutantGroup, assessmentUnitId, assessmentUnitName) %>%
-  dplyr::distinct()
-
+# remove intermediat objects
 rm(orig.df)
 
 # create df of states and regions
@@ -118,9 +112,11 @@ update.tmdls <- update.df %>%
   lubridate::with_tz(tx = "US/Eastern") %>%
   format("%B %d, %Y at %I:%M %Z")
 
+rm(update.base, update.dates, update.df, aus, actions)
+
 # create .RData file
 
-save(act.df, wb.df,filt.df, states_regions, pollutants_groups, parameters, max_year, years_list, categories,
-     update.tmdls, file = "EQ_data.RData")
+save(act.df, filt.df, states_regions, pollutants_groups, parameters, max_year, 
+     years_list, categories, update.tmdls, file = "EQ_data.RData")
 }
 
