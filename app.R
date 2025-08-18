@@ -128,7 +128,26 @@ ui <- page_sidebar(
           DTOutput("statetable")
         )
       )
+    ),
+    nav_panel(
+      "Waterbodies with TMDLS",
+      # add bar graph panel
+      accordion(
+        accordion_panel(
+          title = "Bar Graph",
+          icon = bsicons::bs_icon("bar-chart"),
+          plotly::plotlyOutput("wbbystate")
+        ),
+        # add data table panel
+        accordion_panel(
+          title = "Data Table of Waterbody/Pollutant",
+          icon = bsicons::bs_icon("table"),
+          downloadButton("download_state", "Download Data"),
+          DTOutput("wbtable")
+        )
+      )
     )
+    
   )
 )
 
@@ -587,6 +606,58 @@ server <- function(input, output, session) {
         yaxis = list(title = "Number of TMDLs")
       )
     plot
+  })
+  
+  # create reactive df to count waterbody and pollutant combinations
+  wb_df <- reactive({
+    df <- reactive_df() %>%
+      dplyr::select(region, state, pollutant, pollutantGroup, assessmentUnitId, 
+                    assessmentUnitName) %>%
+      dplyr::distinct() 
+    
+    return(df)
+  })
+  
+  # create reactive waterbody tally
+  wbtally_df <- reactive({
+    df <- wb_df() %>%
+      dplyr::group_by(state) %>%
+      dplyr::arrange(state) %>%
+      dplyr::tally()
+    
+    return(df)
+  })
+  
+  
+  # create state tmdl count bar plot
+  output$wbbystate <- renderPlotly({
+    df <- wbtally_df()
+    
+    plot <- plotly::plot_ly(df,
+                            x = ~n,
+                            y = ~state,
+                            type = "bar",
+                            text = ~state,
+                            textposition = "outside"
+    ) %>%
+      plotly::layout(
+        title = "Waterbodies with TMDLs by State",
+        yaxis = list(
+          title = "State",
+          showticklabels = FALSE
+        ),
+        xaxis = list(title = "Number of Unique Assessment Unit/Pollutant Combinations")
+      )
+    
+    plot
+  })
+  
+  # create data table for waterbody and pollutant combinations
+  output$wbtable <- renderDT({
+    datatable(
+      wb_df(),
+      escape = FALSE
+    )
   })
 }
 

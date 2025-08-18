@@ -54,26 +54,7 @@ act.df <- filt.df %>%
   dplyr::select(-addressedParameter) %>%
   dplyr::distinct()
 
-# create df for counting by assessment unit/pollutant
-wb.df <- orig.df %>%
-  dplyr::filter(!is.na(pollutant),
-                pollutant != "") %>%
-  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
-                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
-  dplyr::distinct() %>%
-  dplyr::group_by(pollutant, assessmentUnitId, actionId) %>%
-  dplyr::mutate(addressedParameter = paste0(actionId, ": ", paste(addressedParameter, collapse = "; "))) %>%
-  dplyr::ungroup() %>%
-  dplyr::distinct() %>%
-  dplyr::group_by(pollutant, assessmentUnitId) %>%
-  dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; "),
-                actionIds = paste(unique(actionId), collapse = "\n"),
-                actionNames = paste(unique(actionName), collapse = "\n"),
-                planSummaryLinks = paste(unique(planSummaryLink), collapse = "\n")) %>%
-  dplyr::ungroup() %>%                
-  dplyr::select(-addressedParameter, -actionId, -actionName, -planSummaryLink) %>%
-  distinct()
-
+# remove intermediat objects
 rm(orig.df)
 
 # create df of states and regions
@@ -107,6 +88,13 @@ aus <- filt.df %>%
   dplyr::select(assessmentUnitName, state, region) %>%
   dplyr::distinct()
 
+# reorder filt df for use in app
+filt.df <- filt.df %>%
+  dplyr::select(region, state, fiscalYearEstablished, pollutant,
+                pollutantGroup, addressedParameters, actionId, actionName,
+                assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+  dplyr::distinct()
+
 
 # get update date
 
@@ -124,9 +112,11 @@ update.tmdls <- update.df %>%
   lubridate::with_tz(tx = "US/Eastern") %>%
   format("%B %d, %Y at %I:%M %Z")
 
+rm(update.base, update.dates, update.df, aus, actions)
+
 # create .RData file
 
-save(act.df, wb.df,filt.df, states_regions, pollutants_groups, parameters, max_year, years_list, categories,
-     update.tmdls, file = "EQ_data.RData")
+save(act.df, filt.df, states_regions, pollutants_groups, parameters, max_year, 
+     years_list, categories, update.tmdls, file = "EQ_data.RData")
 }
 
