@@ -128,7 +128,26 @@ ui <- page_sidebar(
           DTOutput("statetable")
         )
       )
+    ),
+    nav_panel(
+      "Waterbodies with TMDLS",
+      # add bar graph panel
+      accordion(
+        accordion_panel(
+          title = "Bar Graph",
+          icon = bsicons::bs_icon("bar-chart"),
+          plotly::plotlyOutput("bystate")
+        ),
+        # add data table panel
+        accordion_panel(
+          title = "Data Table of Waterbody/Pollutant Combinations",
+          icon = bsicons::bs_icon("table"),
+          downloadButton("download_wb", "Download Data"),
+          DTOutput("wbpoll")
+        )
+      )
     )
+    
   )
 )
 
@@ -587,6 +606,20 @@ server <- function(input, output, session) {
         yaxis = list(title = "Number of TMDLs")
       )
     plot
+  })
+  
+  # create reactive df for plots and tables
+  reactive_wb <- reactiveVal(wb.df)
+  
+  # create original df so underlying data for app can be reset
+  original_wb <- reactiveVal(wb.df)
+  
+  # create data table for waterbody/pollutant counts
+  output$wbpoll <- renderDT({
+    datatable(
+      reactive_wb(),
+      escape = FALSE
+    )
   })
 }
 

@@ -58,21 +58,8 @@ act.df <- filt.df %>%
 wb.df <- orig.df %>%
   dplyr::filter(!is.na(pollutant),
                 pollutant != "") %>%
-  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
-                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
-  dplyr::distinct() %>%
-  dplyr::group_by(pollutant, assessmentUnitId, actionId) %>%
-  dplyr::mutate(addressedParameter = paste0(actionId, ": ", paste(addressedParameter, collapse = "; "))) %>%
-  dplyr::ungroup() %>%
-  dplyr::distinct() %>%
-  dplyr::group_by(pollutant, assessmentUnitId) %>%
-  dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; "),
-                actionIds = paste(unique(actionId), collapse = "\n"),
-                actionNames = paste(unique(actionName), collapse = "\n"),
-                planSummaryLinks = paste(unique(planSummaryLink), collapse = "\n")) %>%
-  dplyr::ungroup() %>%                
-  dplyr::select(-addressedParameter, -actionId, -actionName, -planSummaryLink) %>%
-  distinct()
+  dplyr::select(region, state, pollutant, pollutantGroup, assessmentUnitId, assessmentUnitName) %>%
+  dplyr::distinct()
 
 rm(orig.df)
 
@@ -105,6 +92,13 @@ actions <- filt.df %>%
 # create df of assessment unit names by state and region
 aus <- filt.df %>%
   dplyr::select(assessmentUnitName, state, region) %>%
+  dplyr::distinct()
+
+# reorder filt df for use in app
+filt.df <- filt.df %>%
+  dplyr::select(region, state, fiscalYearEstablished, pollutant,
+                pollutantGroup, addressedParameters, actionId, actionName,
+                assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct()
 
 
