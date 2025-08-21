@@ -33,7 +33,9 @@ orig.df <- rExpertQuery::EQ_NationalExtract("tmdl")
 # start by filtering to necessary cols
 filt.df <- orig.df %>%
   dplyr::filter(!is.na(pollutant),
-                pollutant != "") %>%
+                pollutant != "",
+                !is.na(assessmentUnitId),
+                assessmentUnitId != "") %>%
   dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                 actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct() %>%
@@ -48,11 +50,6 @@ parameters <- filt.df %>%
   dplyr::select(addressedParameter, addressedParameters) %>%
   distinct() %>%
   dplyr::arrange(addressedParameter)
-
-# create df for counting by action id/assessment unit/pollutant
-act.df <- filt.df %>%
-  dplyr::select(-addressedParameter) %>%
-  dplyr::distinct()
 
 # remove intermediat objects
 rm(orig.df)
@@ -116,7 +113,7 @@ rm(update.base, update.dates, update.df, aus, actions)
 
 # create .RData file
 
-save(act.df, filt.df, states_regions, pollutants_groups, parameters, max_year, 
+save(filt.df, states_regions, pollutants_groups, parameters, max_year, 
      years_list, categories, update.tmdls, file = "EQ_data.RData")
 }
 
