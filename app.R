@@ -42,20 +42,41 @@ ui <- page_sidebar(
       "Summary",
       accordion(
         accordion_panel(
-            title = "TMDL Count",
-            tags$h4(htmlOutput("tmdl1"))),
-          accordion_panel(
-            title = "Description",
-            tags$h4(htmlOutput("cwa"))))
+          title = "TMDL Count",
+          tags$h4(htmlOutput("tmdl1"))
+        ),
+        accordion_panel(
+          title = "Description",
+          tags$h4(htmlOutput("cwa"))
+        )
+      )
     ),
     nav_panel(
       "Filtered TMDL Results",
+      radioButtons(
+        inputId = "filt_select",
+        label = "Select TMDL Count Method:",
+        choices = c(
+          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+        ),
+        selected = "reactive_df",
+        width = '100%'
+      ),
       downloadButton("download_df", "Download Data"),
       DTOutput("table")
     ),
     # create tmdl production history tab
     nav_panel(
       "TMDL Production History",
+      radioButtons(
+        inputId = "prod_select",
+        label = "Select TMDL Count Method:",
+        choices = c(
+          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+        ),
+        selected = "reactive_df",
+        width = '100%'
+      ),
       # add bar graph panel
       accordion(
         accordion_panel(
@@ -75,6 +96,15 @@ ui <- page_sidebar(
     # create annual tmdl production panel
     nav_panel(
       "Annual TMDL Production",
+      radioButtons(
+        inputId = "annual_select",
+        label = "Select TMDL Count Method:",
+        choices = c(
+          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+        ),
+        selected = "reactive_df",
+        width = '100%'
+      ),
       # add bar graph panel
       accordion(
         accordion_panel(
@@ -94,6 +124,16 @@ ui <- page_sidebar(
     # create pollutant panel
     nav_panel(
       "Pollutants",
+      radioButtons(
+        inputId = "poll_radio",
+        label = "Select TMDL Count Method:",
+        choices = c(
+          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
+          "By Unique Pollution/Assessment Unit" = "wb_df"
+        ),
+        selected = "reactive_df",
+        width = '100%'
+      ),
       # add pie graph panel
       accordion(
         accordion_panel(
@@ -113,6 +153,16 @@ ui <- page_sidebar(
     # create tmdls by state pnale
     nav_panel(
       "TMDLs By State",
+      radioButtons(
+        inputId = "state_select",
+        label = "Select TMDL Count Method:",
+        choices = c(
+          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
+          "By Unique Pollution/Assessment Unit" = "wb_df"
+        ),
+        selected = "reactive_df",
+        width = '100%'
+      ),
       # add bar graph panel
       accordion(
         accordion_panel(
@@ -128,30 +178,9 @@ ui <- page_sidebar(
           DTOutput("statetable")
         )
       )
-    ),
-    nav_panel(
-      "Waterbodies with TMDLS",
-      # add bar graph panel
-      accordion(
-        accordion_panel(
-          title = "Bar Graph",
-          icon = bsicons::bs_icon("bar-chart"),
-          plotly::plotlyOutput("wbbystate")
-        ),
-        # add data table panel
-        accordion_panel(
-          title = "Data Table of Waterbody/Pollutant",
-          icon = bsicons::bs_icon("table"),
-          downloadButton("download_state", "Download Data"),
-          DTOutput("wbtable")
-        )
-      )
     )
-    
   )
 )
-
-
 
 
 # Server
@@ -191,7 +220,6 @@ server <- function(input, output, session) {
 
   # update reactive df based on user inputs
   observeEvent(input$update, {
-    
     temp_df <- original_df()
 
     if (!is.null(input$year)) {
@@ -229,8 +257,8 @@ server <- function(input, output, session) {
   observeEvent(input$clear, {
     reactive_df(filt.df)
     original_df(filt.df)
-    
-    #updateCheckboxInput(session, "counttype", selected = "waterbody")
+
+    # updateCheckboxInput(session, "counttype", selected = "waterbody")
 
     updateSliderInput(session, "year", min = 1995, max = max_year, value = c(1995, max_year))
 
@@ -241,6 +269,28 @@ server <- function(input, output, session) {
     updateSelectInput(session, "pollgroup", selected = "")
 
     updateSelectInput(session, "pollutant", selected = "")
+  })
+  
+  # create reactive df to count waterbody and pollutant combinations
+  wb_df <- reactive({
+    df <- reactive_df() %>%
+      dplyr::select(
+        region, state, pollutant, pollutantGroup, assessmentUnitId,
+        assessmentUnitName
+      ) %>%
+      dplyr::distinct()
+    
+    return(df)
+  })
+  
+  # create reactive waterbody tally
+  wbtally_df <- reactive({
+    df <- wb_df() %>%
+      dplyr::group_by(state) %>%
+      dplyr::arrange(state) %>%
+      dplyr::tally()
+    
+    return(df)
   })
 
   # create output table for filtered (by user input) tmdls for 'Filtered TMDL Results' tab
@@ -277,7 +327,7 @@ server <- function(input, output, session) {
       dplyr::select(assessmentUnitId, pollutant, actionId) %>%
       dplyr::n_distinct() %>%
       formatC(big.mark = ",")
-    
+
     count2 <- reactive_df() %>%
       dplyr::select(assessmentUnitId, pollutant) %>%
       dplyr::n_distinct() %>%
@@ -301,13 +351,13 @@ server <- function(input, output, session) {
       "Total Maximum Daily Loads (TMDLs) for impaired waters. A TMDL is the sum of the ",
       "individual Wasteload allocations (WLAs) for point sources , load allocations (LAs) for ",
       "non-point sources and natural background (",
-      '<a href="', 'https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2', '" target="_blank">', 
-      '40 C.F.R. 130.2(i)', '</a>',  ").", "<br>", "<br>",
+      '<a href="', "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2", '" target="_blank">',
+      "40 C.F.R. 130.2(i)", "</a>", ").", "<br>", "<br>",
       "At the national level, EPA’s method for counting TMDLs using ATTAINS is as follows:", "<br>",
       "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>", "<br>",
       "Data Source: ",
-      '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">', 
-      'Expert Query National Downloads', '</a>'
+      '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">',
+      "Expert Query National Downloads", "</a>"
     ))
   })
 
@@ -339,7 +389,12 @@ server <- function(input, output, session) {
     return(df)
   })
 
-
+  # select count method for pollutants
+  poll_choice <- observeEvent({
+    switch(input$poll_radio,
+           "reactive_df" = reactive_df,
+           "wb_df" = wb_df)
+  })
 
   # create reactive value for pollutant group selection (user input) to use in "Pollutants" tab plot and table
   current_category <- reactiveVal()
@@ -353,10 +408,10 @@ server <- function(input, output, session) {
   # create reactive df to count tmdls by pollutant group, unless a pollutant group is selected to use for "Pollutants" plot and table
   pies_data <- reactive({
     if (!length(current_category())) {
-      return(dplyr::count(reactive_df(), pollutantGroup))
+      return(dplyr::count(poll_choice, pollutantGroup))
     }
     # if pollutant group is selected, count by pollutant
-    reactive_df() %>%
+    poll_choice %>%
       dplyr::filter(pollutantGroup %in% current_category()) %>%
       dplyr::count(pollutant)
   })
@@ -607,38 +662,18 @@ server <- function(input, output, session) {
       )
     plot
   })
-  
-  # create reactive df to count waterbody and pollutant combinations
-  wb_df <- reactive({
-    df <- reactive_df() %>%
-      dplyr::select(region, state, pollutant, pollutantGroup, assessmentUnitId, 
-                    assessmentUnitName) %>%
-      dplyr::distinct() 
-    
-    return(df)
-  })
-  
-  # create reactive waterbody tally
-  wbtally_df <- reactive({
-    df <- wb_df() %>%
-      dplyr::group_by(state) %>%
-      dplyr::arrange(state) %>%
-      dplyr::tally()
-    
-    return(df)
-  })
-  
-  
+
+
   # create state tmdl count bar plot
   output$wbbystate <- renderPlotly({
     df <- wbtally_df()
-    
+
     plot <- plotly::plot_ly(df,
-                            x = ~n,
-                            y = ~state,
-                            type = "bar",
-                            text = ~state,
-                            textposition = "outside"
+      x = ~n,
+      y = ~state,
+      type = "bar",
+      text = ~state,
+      textposition = "outside"
     ) %>%
       plotly::layout(
         title = "Waterbodies with TMDLs by State",
@@ -648,10 +683,10 @@ server <- function(input, output, session) {
         ),
         xaxis = list(title = "Number of Unique Assessment Unit/Pollutant Combinations")
       )
-    
+
     plot
   })
-  
+
   # create data table for waterbody and pollutant combinations
   output$wbtable <- renderDT({
     datatable(
