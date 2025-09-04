@@ -389,13 +389,7 @@ server <- function(input, output, session) {
     return(df)
   })
 
-  # select count method for pollutants
-  poll_choice <- observeEvent({
-    switch(input$poll_radio,
-           "reactive_df" = reactive_df,
-           "wb_df" = wb_df)
-  })
-
+  
   # create reactive value for pollutant group selection (user input) to use in "Pollutants" tab plot and table
   current_category <- reactiveVal()
 
@@ -407,11 +401,16 @@ server <- function(input, output, session) {
 
   # create reactive df to count tmdls by pollutant group, unless a pollutant group is selected to use for "Pollutants" plot and table
   pies_data <- reactive({
+    
+    df <- switch(input$poll_radio,
+                 "reactive_df" = reactive_df(),
+                 "wb_df" = wb_df())
+    
     if (!length(current_category())) {
-      return(dplyr::count(poll_choice, pollutantGroup))
+      return(dplyr::count(df, pollutantGroup))
     }
     # if pollutant group is selected, count by pollutant
-    poll_choice %>%
+    df %>%
       dplyr::filter(pollutantGroup %in% current_category()) %>%
       dplyr::count(pollutant)
   })
