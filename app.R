@@ -150,7 +150,7 @@ ui <- page_sidebar(
         )
       )
     ),
-    # create tmdls by state pnale
+    # create tmdls by state panel
     nav_panel(
       "TMDLs By State",
       radioButtons(
@@ -585,12 +585,16 @@ server <- function(input, output, session) {
 
   # create reactive state/tmdls data frame
   state_df <- reactive({
-    reactive_df() %>%
-      dplyr::select(state, fiscalYearEstablished, pollutant, assessmentUnitId, actionId) %>%
+    
+    df <- switch(input$state_select,
+                 "reactive_df" = reactive_df(),
+                 "wb_df" = wb_df()) %>%
       dplyr::distinct() %>%
       dplyr::group_by(state) %>%
       dplyr::arrange(state) %>%
       dplyr::tally()
+    
+    return(df)
   })
 
   # create data table for state and tmdl counts
@@ -600,12 +604,13 @@ server <- function(input, output, session) {
         dplyr::rename(
           "TMDL Count" = n,
           "State" = state
-        ),
+        )
+      ,
       escape = FALSE
     )
   })
 
-  # create state tmdl count bar plot
+  #create state tmdl count bar plot
   output$bystate <- renderPlotly({
     df <- state_df()
 
@@ -660,38 +665,6 @@ server <- function(input, output, session) {
         yaxis = list(title = "Number of TMDLs")
       )
     plot
-  })
-
-
-  # create state tmdl count bar plot
-  output$wbbystate <- renderPlotly({
-    df <- wbtally_df()
-
-    plot <- plotly::plot_ly(df,
-      x = ~n,
-      y = ~state,
-      type = "bar",
-      text = ~state,
-      textposition = "outside"
-    ) %>%
-      plotly::layout(
-        title = "Waterbodies with TMDLs by State",
-        yaxis = list(
-          title = "State",
-          showticklabels = FALSE
-        ),
-        xaxis = list(title = "Number of Unique Assessment Unit/Pollutant Combinations")
-      )
-
-    plot
-  })
-
-  # create data table for waterbody and pollutant combinations
-  output$wbtable <- renderDT({
-    datatable(
-      wb_df(),
-      escape = FALSE
-    )
   })
 }
 
