@@ -188,7 +188,8 @@ ui <- tagList(
       )
     )
   )
-)
+),
+shiny::includeHTML("app/footer.html")
 )
 
 
