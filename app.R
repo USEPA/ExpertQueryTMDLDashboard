@@ -13,19 +13,31 @@ load("EQ_data.RData")
 # UI
 ui <- tagList(
   tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
   ),
   shiny::includeHTML("app/header.html"),
   page_sidebar(
   # url options
   tags$head(
-    tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropogation(); });"))
+    tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropogation(); });")),
+    tags$style(HTML("
+                    .accordion-button {
+                    background-color: #005EA2;
+                    color: white;
+                    }
+                    
+                    .accordion-button:not(.collapsed) {
+                    background-color: #005EA2;
+                    color: white;
+                    }
+                    "
+                    ))
   ),
   # title and update information
   title = div(
-    tags$h1("National Summary of TMDLs in ATTAINS", style = "margin-bottom: 0;"),
     br(),
-    tags$h6(htmlOutput("update"))
+    tags$h1("National Summary of TMDLs in ATTAINS", style = "margin-bottom: 0;"),
+    tags$h3(htmlOutput("update"))
   ),
   # create sidebar for user inputs
   sidebar = sidebar(
@@ -46,16 +58,18 @@ ui <- tagList(
     nav_panel(
       "Summary",
       accordion(
+        open = c("desc", "count"),
         accordion_panel(
-          title = "TMDL Count",
-          tags$h4(htmlOutput("tmdl1")),
-          open = TRUE,
-          multiple = TRUE
+          title = span("TMDL Count", style = "font-size: 16px"),
+          icon = bsicons::bs_icon("123"),
+          tags$p(htmlOutput("tmdl1")),
+          value = "count"
         ),
         accordion_panel(
           title = "Description",
-          tags$h4(htmlOutput("cwa")),
-          open = TRUE
+          icon = bsicons::bs_icon("file-earmark-text"),
+          tags$p(htmlOutput("cwa")),
+          value = "desc"
         )
       )
     ),
