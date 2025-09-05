@@ -11,7 +11,12 @@ library(bsicons)
 load("EQ_data.RData")
 
 # UI
-ui <- page_sidebar(
+ui <- tagList(
+  tags$head(
+    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css")
+  ),
+  shiny::includeHTML("app/header.html"),
+  page_sidebar(
   # url options
   tags$head(
     tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropogation(); });"))
@@ -43,11 +48,14 @@ ui <- page_sidebar(
       accordion(
         accordion_panel(
           title = "TMDL Count",
-          tags$h4(htmlOutput("tmdl1"))
+          tags$h4(htmlOutput("tmdl1")),
+          open = TRUE,
+          multiple = TRUE
         ),
         accordion_panel(
           title = "Description",
-          tags$h4(htmlOutput("cwa"))
+          tags$h4(htmlOutput("cwa")),
+          open = TRUE
         )
       )
     ),
@@ -180,6 +188,7 @@ ui <- page_sidebar(
       )
     )
   )
+)
 )
 
 
@@ -353,8 +362,6 @@ server <- function(input, output, session) {
       "non-point sources and natural background (",
       '<a href="', "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2", '" target="_blank">',
       "40 C.F.R. 130.2(i)", "</a>", ").", "<br>", "<br>",
-      "At the national level, EPA’s method for counting TMDLs using ATTAINS is as follows:", "<br>",
-      "1 TMDL = 1 unique assessment unit / pollutant / Action ID combination", "<br>", "<br>",
       "Data Source: ",
       '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">',
       "Expert Query National Downloads", "</a>"
