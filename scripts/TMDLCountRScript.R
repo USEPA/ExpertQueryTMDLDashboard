@@ -1,3 +1,6 @@
+# load libraries and data
+library(dplyr)
+
 load("EQ_data.RData")
 
 # this section results in a data set which can be used to count tmdls by unique combination of
