@@ -8,6 +8,12 @@ library(scales)
 library(shinythemes)
 library(bsicons)
 
+# Bug fixes/To do list:
+#   expand Y axis to 250 k for TMDL Production History
+# pollutant/pollutant group filter is not working (pollutant list should be filtered based on selected pollutant group)
+# addressed parameters available to search should filter based on pollutant/pollutant group
+# add download all button (to download all tables/plots in one zip file)
+
 load("EQ_data.RData")
 
 # UI
@@ -41,7 +47,7 @@ ui <- tagList(
   ),
   # create sidebar for user inputs
   sidebar = sidebar(
-    sliderInput("year", "Year:", min = 1995, max = max_year, value = c(1995, max_year), sep = ""),
+    sliderInput("year", "Year:", min = 1975, max = max_year, value = c(1975, max_year), sep = ""),
     selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
     selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
     selectInput("pollgroup", "Pollutant Group:", choices = sort(unique(pollutants_groups$pollutantGroup)), selected = NULL, multiple = TRUE),
