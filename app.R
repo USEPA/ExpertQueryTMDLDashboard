@@ -115,7 +115,7 @@ ui <- tagList(
       # add bar graph panel
       accordion(
         accordion_panel(
-          title = "Bar Graph",
+          title = "Filled Area Graph",
           icon = bsicons::bs_icon("graph-up"),
           plotly::plotlyOutput("historyplot")
         ),
@@ -216,17 +216,27 @@ ui <- tagList(
     ),
     nav_panel(
       "Download Tables and Figures",
-      radioButtons(
-        inputId = "filt_select",
-        label = "Select TMDL Count Method:",
-        choices = c(
-          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
-        ),
-        selected = "reactive_df",
-        width = '100%'
-      ),
-      downloadButton("download_df", "Download Data"),
-      DTOutput("table")
+      checkboxGroupInput(inputId = "filt.output", 
+                         label = strong("Filtered TMDL Results"),
+                  choices = c("Data Table"),
+                  selected = c("Data Table")),
+      checkboxGroupInput(inputId = "prod.output", 
+                         label = strong("TMDL Production History"),
+                         choices = c("Data Table", "Filled Area Graph"),
+                         selected = c("Data Table", "Filled Area Graph")),
+      checkboxGroupInput(inputId = "annual.output", 
+                         label = strong("Annual TMDL Production"),
+                         choices = c("Data Table", "Bar Graph"),
+                         selected = c("Data Table", "Bar Graph")),
+      checkboxGroupInput(inputId = "poll.output", 
+                         label = strong("Pollutants"),
+                         choices = c("Data Table", "Single Pie Chart (by Pollutant Group)",
+                                     "Multiple Pie Charts (by Pollutants within each Pollutant Group"),
+                         selected = c("Data Table", "Single Pie Chart (by Pollutant Group)")),
+      checkboxGroupInput(inputId = "state.output", 
+                         label = strong("TMDLs by State"),
+                         choices = c("Data Table", "Bar Graph"),
+                         selected = c("Data Table", "Bar Graph"))
     )
   )
 ),
