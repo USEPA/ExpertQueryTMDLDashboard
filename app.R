@@ -9,6 +9,7 @@ library(shinythemes)
 library(bsicons)
 
 # Bug fixes/To do list:
+# fix top banner so that gray section collapses when not selected
 #   expand Y axis to 250 k for TMDL Production History
 # pollutant/pollutant group filter is not working (pollutant list should be filtered based on selected pollutant group)
 # addressed parameters available to search should filter based on pollutant/pollutant group
@@ -64,7 +65,7 @@ ui <- tagList(
     nav_panel(
       "Summary",
       accordion(
-        open = c("desc", "count"),
+        open = c("desc", "count", "instruct"),
         accordion_panel(
           title = span("TMDL Count", style = "font-size: 16px"),
           icon = bsicons::bs_icon("123"),
@@ -76,6 +77,12 @@ ui <- tagList(
           icon = bsicons::bs_icon("file-earmark-text"),
           tags$p(htmlOutput("cwa")),
           value = "desc"
+        ),
+        accordion_panel(
+          title = "Dashboard Instructions",
+          icon = bsicons::bs_icon("person-workspace"),
+          tags$p(htmlOutput("instructions")),
+          value = "instruct"
         )
       )
     ),
@@ -206,6 +213,20 @@ ui <- tagList(
           DTOutput("statetable")
         )
       )
+    ),
+    nav_panel(
+      "Download Tables and Figures",
+      radioButtons(
+        inputId = "filt_select",
+        label = "Select TMDL Count Method:",
+        choices = c(
+          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+        ),
+        selected = "reactive_df",
+        width = '100%'
+      ),
+      downloadButton("download_df", "Download Data"),
+      DTOutput("table")
     )
   )
 ),
@@ -386,6 +407,13 @@ server <- function(input, output, session) {
       "Data Source: ",
       '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">',
       "Expert Query National Downloads", "</a>"
+    ))
+  })
+  
+  # add user instructions for dashboard
+  output$instructions <- renderText({
+    HTML(paste0(
+      "This section will contain instructions for using the dashboard."
     ))
   })
 
@@ -690,7 +718,8 @@ server <- function(input, output, session) {
           anchor = "center"
         ),
         xaxis = list(title = "Fiscal Year Established"),
-        yaxis = list(title = "Number of TMDLs")
+        yaxis = list(title = "Number of TMDLs",
+                     range = list(0, max(df$CUMMULATIVETMDLS) + 0.2 * max(df$CUMMULATIVETMDLS)))
       )
     plot
   })
