@@ -222,8 +222,8 @@ ui <- tagList(
                                  "Word Doc - contains all selected tables and figures*",
                                  "Individual Files - a zip folder containing tables (.csv) and figures (.png)"),
                   width = '100%'),
-      downloadButton("download.results", "Download Selected Output"),
       tags$p(em("*PDF and Word Doc selections not reccomended when 'Data Table' is selected for 'Filtered TMDL Results")),
+      downloadButton("download.results", "Download Selected Output"),
       checkboxGroupInput(inputId = "filt.output", 
                          label = strong("Filtered TMDL Results"),
                   choices = c("Data Table"),
@@ -768,6 +768,7 @@ server <- function(input, output, session) {
     
     return(file.list)
   })
+
   
   output$download.results <- downloadHandler(
     

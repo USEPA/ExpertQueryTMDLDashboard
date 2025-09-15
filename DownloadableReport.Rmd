@@ -1,0 +1,108 @@
+---
+title: "TMDL Dashboard Downloadable Report"
+output: 
+  html_document: default
+  pdf_document: default
+  word_document: default
+params:
+  year_min: 1975
+  year_max: 2025
+  region: !r list("05", "07")
+  state: !r list("IL", "MO")
+  group_poll: "NUTRIENTS"
+  name_poll: NULL
+  addparam: NULL
+  filt.dt: TRUE
+  prod.output.plot: TRUE
+  prod.output.data: TRUE
+  annual.output.plot: TRUE
+  annual.output.data: TRUE
+  poll.output.plot: TRUE
+  poll.output.data: TRUE
+  state.output.plot: TRUE
+  state.output.data: TRUE
+---
+
+```{r setup, echo = FALSE}
+load("EQ_data.RData")
+
+library(dplyr)
+library(data.table)
+library(plotly)
+library(stringi)
+```
+
+This report was generated from EPA's internal TMDL Dashboard on `r format(Sys.Date(), "%B %d, %Y")`. The Expert Query data used to generate the following tables and figures was updated on `r update.tmdls`.
+
+
+```{r params.df, echo=FALSE}
+
+desc.param <- c("Date Range For Fiscal Year Established",
+                "EPA Region(s)",
+                "State(s)",
+                "Pollutant Group(s)",
+                "Pollutant(s)",
+                "Addressed Parameter(s)")
+
+list.params <- c(paste0(params$year_min, "-", params$year_max),
+                stringi::stri_replace_last(paste(params$region, collapse = ", "), 
+                                          fixed = ", ", " and "),
+                stringi::stri_replace_last(paste(params$state, collapse = ", "), 
+                                          fixed = ", ", " and "),
+                stringi::stri_replace_last(paste(params$group_poll, collapse = ", "), 
+                                          fixed = ", ", " and "),
+                stringi::stri_replace_last(paste(params$name_poll, collapse = ", "), 
+                                          fixed = ", ", " and "),
+                stringi::stri_replace_last(paste(params$addparam, collapse = ", "), 
+                                          fixed = ", ", " and "))
+
+param.df <- data.frame(desc.param, list.params) %>%
+  dplyr::rename("Data Filter" = desc.param,
+                "User Input" = list.params)
+
+DT::datatable(param.df)
+
+```
+
+The following parameters were selected by the user. Explain and and or in the selections.
+
+```{r params.dt, echo = TRUE}
+
+DT::datatable(param.df)
+```
+
+
+
+```{r tmdl.data, echo = FALSE, eval = TRUE}
+
+# this filter doesn't work when one of the params is null - need to address that
+tmdl.df <- filt.df %>%
+  dplyr::filter(state %in% params$state,
+                fiscalYearEstablished >= params$year_min,
+                fiscalYearEstablished <= params$year_max,
+                region %in% params$region,
+                pollutantGroup %in% params$pollgroup,
+                pollutant %in% params$poll,
+                addressedParameters %in% params$addparam)
+
+tmdl.actid.count <- dplyr::n_distinct(tmdl.df)
+
+tmdl.noactid.count <- tmdl.df %>%
+  dplyr::select(pollutant, assessmentUnitId) %>%
+  dplyr::distinct() %>%
+  dplyr::n_distinct()
+```
+
+
+In this filtered data set there are: 
+`r formatC(tmdl.actid.count, big.mark = ",")` unique combinations of actionId, assessmentUnitId and pollutant.
+`r formatC(tmdl.noactid.count, big.mark = ",")` unique combinations of assessmentUnitId and pollutant.
+
+`r  if(params$filt.dt == TRUE){"#Header\nIs this under the header\n\n##subheader\nis this undersub?"}`
+
+```{r filt.df.section}
+
+
+
+```
+
