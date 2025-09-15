@@ -76,7 +76,24 @@ DT::datatable(param.df)
 ```{r tmdl.data, echo = FALSE, eval = TRUE}
 
 # this filter doesn't work when one of the params is null - need to address that
-tmdl.df <- filt.df %>%
+tmdl.df <- filt.df
+
+# write function to check if each param is null and then handle accordingly
+# need to finish this function
+paramCheck <- function(.data, paramname) {
+  
+  if(!is.null(paramname)) {
+    
+    # add crosswalk between param names and data set column names
+    
+    .data <- .data %>%
+      dplyr::filter(.data)
+  }
+}
+
+if(!is.null(params$state)) {
+  
+}
   dplyr::filter(state %in% params$state,
                 fiscalYearEstablished >= params$year_min,
                 fiscalYearEstablished <= params$year_max,
