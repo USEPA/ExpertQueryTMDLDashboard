@@ -177,7 +177,66 @@ if(params$filt.dt == TRUE){
 
 ```
 
-`r  if(params$prod.output.plot == TRUE | prod.output.data == TRUE){paste0("<h1>TMDL Production History</h1>", "The data table below displays all TMDL records matching filters selected by the user. Each row represents a unique combination of pollutant, assessment unit, and action id.")}`
+`r  if(params$prod.output.plot == TRUE | params$prod.output.data == TRUE){paste0("<h1>TMDL Production History</h1>", "The data table below displays all TMDL records matching filters selected by the user. Each record represents a unique combination of pollutant, assessment unit, and action id.")}`
 
-prod.output.plot: TRUE
-  prod.output.data: TRUE
+```{r prod.plot, echo=FALSE}
+
+if(params$prod.output.plot == TRUE) {
+  
+    count_df <- tmdl.df %>%
+      dplyr::select(state, fiscalYearEstablished, pollutant, assessmentUnitId, actionId) %>%
+      dplyr::distinct() %>%
+      dplyr::group_by(fiscalYearEstablished) %>%
+      dplyr::summarize(TMDLCOUNT = length(pollutant)) %>%
+      tidyr::complete(fiscalYearEstablished = tidyr::full_seq(params$year_min:params$year_max, 1)) %>%
+      dplyr::filter(!is.na(fiscalYearEstablished)) %>%
+      dplyr::arrange(fiscalYearEstablished) %>%
+      dplyr::mutate(
+        TMDLCOUNT = ifelse(is.na(TMDLCOUNT), 0, TMDLCOUNT),
+        CUMMULATIVETMDLS = cumsum(TMDLCOUNT)
+      )
+  
+
+    plot <- plotly::plot_ly(
+      x = ~ count_df$fiscalYearEstablished,
+      y = ~ count_df$CUMMULATIVETMDLS,
+      type = "scatter",
+      mode = "none",
+      fill = "tonexty",
+      fillcolor = "#D55E00",
+      name = "Cummulative TMDLs"
+    ) %>%
+      plotly::add_trace(
+        x = ~ count_df$fiscalYearEstablished,
+        y = ~ count_df$TMDLCOUNT,
+        type = "scatter",
+        mode = "none",
+        fill = "tozeroy",
+        fillcolor = "#0072B2",
+        name = "Annual TMDLs"
+      ) %>%
+      plotly::layout(
+        title = list(
+          text = "Annual TMDL Production",
+          xref = "paper",
+          anchor = "center"
+        ),
+        xaxis = list(title = "Fiscal Year Established"),
+        yaxis = list(title = "Number of TMDLs",
+                     range = list(0, max(count_df$CUMMULATIVETMDLS) + 
+                                    0.2 * max(count_df$CUMMULATIVETMDLS)))
+      )
+    
+    plot
+}
+ 
+
+```
+
+
+```{r prod.data, echo=FALSE}
+
+DT::datatable(count_df)
+
+```
+
