@@ -19,8 +19,10 @@ params:
   annual.output.data: TRUE
   poll.output.plot: TRUE
   poll.output.data: TRUE
+  poll.actid: TRUE
   state.output.plot: TRUE
   state.output.data: TRUE
+  state.actid: TRUE
 ---
 
 ```{r setup, echo = FALSE}
@@ -177,7 +179,7 @@ if(params$filt.dt == TRUE){
 
 ```
 
-`r  if(params$prod.output.plot == TRUE | params$prod.output.data == TRUE){paste0("<h1>TMDL Production History</h1>", "The data table below displays all TMDL records matching filters selected by the user. Each record represents a unique combination of pollutant, assessment unit, and action id.")}`
+`r  if(params$prod.output.plot == TRUE | params$prod.output.data == TRUE){paste0("<h1>TMDL Production History</h1>", "The output below summarizes annual and cummulative TMDL production by year. Each record represents a unique combination of pollutant, assessment unit, and action id.")}`
 
 ```{r prod.plot, echo=FALSE}
 
@@ -240,3 +242,53 @@ DT::datatable(count_df)
 
 ```
 
+
+`r  if(params$annual.output.plot == TRUE | params$annual.output.data == TRUE){paste0("<h1>Annual TMDL Production</h1>", "The output below summarizes annual TMDL production. Each record represents a unique combination of pollutant, assessment unit, and action id.")}`
+
+```{r annual.plot, echo=FALSE}
+
+
+# if annual data is selected, set up df
+if(params$annual.output.data == TRUE) {
+annual_data <- count_df %>%
+      dplyr::select(fiscalYearEstablished, TMDLCOUNT) %>%
+      dplyr::rename(
+        "Fiscal Year Established" = fiscalYearEstablished,
+        "TMDL Count" = TMDLCOUNT
+      )
+}
+
+
+# if annual plot is selected, create bar graph
+if(params$annual.output.plot == TRUE) {
+bar_annual <- plotly::plot_ly(count_df, 
+                              x = ~fiscalYearEstablished, 
+                              y = ~TMDLCOUNT, 
+                              type = "bar") %>%
+      plotly::layout(
+        title = "TMDLS Produced Per Year",
+        xaxis = list(title = "Fiscal Year"),
+        yaxis = list(title = "Number of TMDLs Produced")
+      )
+
+# print bar graph
+bar_annual
+}
+```
+
+```{r annual.dt, echo=FALSE}
+
+if(params$annual.output.data == TRUE) {
+DT::datatable(annual_data)
+}
+
+```
+
+`r  if(params$poll.output.plot == TRUE | params$poll.output.data == TRUE){paste0("<h1>Pollutants</h1>", "The output below summarizes annual TMDL production. Each record represents a unique combination of pollutant, assessment unit, and action id.")}`
+
+Need to figure out how to switch between two counting methods here using poll.actid. When TRUE, include actids as part of count, when false only AUID/pollutant.
+
+poll.output.plot: TRUE
+  poll.output.data: TRUE
+  state.output.plot: TRUE
+  state.output.data: TRUE
