@@ -32,8 +32,9 @@ library(plotly)
 library(stringi)
 ```
 
-This report was generated from EPA's internal TMDL Dashboard on `r format(Sys.Date(), "%B %d, %Y")`. The Expert Query data used to generate the following tables and figures was updated on `r update.tmdls`.
+## Data and Analyis Source
 
+This report was generated from EPA's internal TMDL Dashboard on `r format(Sys.Date(), "%B %d, %Y")`. The Expert Query data used to generate the following tables and figures was updated on `r update.tmdls`.
 
 ```{r params.df, echo=FALSE}
 
@@ -60,66 +61,123 @@ param.df <- data.frame(desc.param, list.params) %>%
   dplyr::rename("Data Filter" = desc.param,
                 "User Input" = list.params)
 
-DT::datatable(param.df)
-
 ```
+
+## User Inputs (Data Filters)
 
 The following parameters were selected by the user. Explain and and or in the selections.
 
-```{r params.dt, echo = TRUE}
+
+```{r params.dt, echo=FALSE}
 
 DT::datatable(param.df)
 ```
 
+```{r tmdl.data, include=FALSE}
 
-
-```{r tmdl.data, echo = FALSE, eval = TRUE}
-
-# this filter doesn't work when one of the params is null - need to address that
-tmdl.df <- filt.df
-
-# write function to check if each param is null and then handle accordingly
-# need to finish this function
-paramCheck <- function(.data, paramname) {
+# function to filter data based on user inputs
+paramCheck <- function(.data, paramname = NULL) {
   
   if(!is.null(paramname)) {
     
-    # add crosswalk between param names and data set column names
+    # create variable to refer to param
+    param.name <- paste0("params$", paramname)
     
-    .data <- .data %>%
-      dplyr::filter(.data)
+    # add crosswalk between param names and data set column names
+    tmdl.col <- dplyr::case_when(paramname == "year_min" ~ "fiscalYearEstablished",
+                                 paramname == "year_max" ~ "fiscalYearEstablished",
+                                 paramname == "region" ~ "region",
+                                 paramname == "state" ~ "state",
+                                 paramname == "group_poll" ~ "pollutantGroup",
+                                 paramname == "name_poll" ~ "pollutantName",
+                                 paramname == "addparam" ~ "addressedParameters")
+    
+    # create variable for filter value
+    param.filt <- eval(parse(text = param.name))
+    
+    # reformat param.filt if longer than one value
+    if(length(param.filt) >1) {
+      
+      param.filt <- unlist(param.filt)
+      
+      # if the param is region, transform to numeric
+      if(grepl("region", paramname, fixed = TRUE)) {
+        
+        param.filt <- as.numeric(param.filt)
+      }
+    }
+    
+    # do not filter df if param equals NULL
+    if(is.null(eval(parse(text = param.name)))) {
+      
+      .data <- .data
+      
+    }
+    
+    # filter df if param does not equal NULL
+    if(!is.null(eval(parse(text = param.name)))) {
+      
+      # params that can have multiple inputs
+      mult.param <- c("region", "state", "group_poll", "name_poll", "addparam")
+ 
+  # filter data
+  .data <- .data %>%
+  dplyr::filter(
+    if(paramname == "year_min") {
+      !!rlang::sym(tmdl.col) >= param.filt
+    } else if (paramname == "year_max") {
+      !!rlang::sym(tmdl.col) <= param.filt
+    } else if(paramname %in% mult.param) {
+      !!rlang::sym(tmdl.col) %in% param.filt
+    }
+  )
   }
+  return(.data)
+    }
 }
 
-if(!is.null(params$state)) {
+
+# filter tmdl data
+# this might be able to be rewritten with a purrr::map variant (more concise)
+tmdl.df <- filt.df %>%
+  paramCheck(paramname = "year_min") %>%
+  paramCheck(paramname = "year_max") %>%
+  paramCheck(paramname = "region") %>%
+  paramCheck(paramname = "state") %>%
+  paramCheck(paramname = "group_poll") %>%
+  paramCheck(paramname = "name_poll") %>%
+  paramCheck(paramname = "addparam")
   
-}
-  dplyr::filter(state %in% params$state,
-                fiscalYearEstablished >= params$year_min,
-                fiscalYearEstablished <= params$year_max,
-                region %in% params$region,
-                pollutantGroup %in% params$pollgroup,
-                pollutant %in% params$poll,
-                addressedParameters %in% params$addparam)
 
+
+# get count of TMDLs by unique combination of pollutant/action id/assessment unit
 tmdl.actid.count <- dplyr::n_distinct(tmdl.df)
 
+# get count of TMDLs by unique combination of pollutant/assessment unit
 tmdl.noactid.count <- tmdl.df %>%
   dplyr::select(pollutant, assessmentUnitId) %>%
   dplyr::distinct() %>%
   dplyr::n_distinct()
-```
-
-
-In this filtered data set there are: 
-`r formatC(tmdl.actid.count, big.mark = ",")` unique combinations of actionId, assessmentUnitId and pollutant.
-`r formatC(tmdl.noactid.count, big.mark = ",")` unique combinations of assessmentUnitId and pollutant.
-
-`r  if(params$filt.dt == TRUE){"#Header\nIs this under the header\n\n##subheader\nis this undersub?"}`
-
-```{r filt.df.section}
-
-
 
 ```
 
+In this filtered data set there are:
+
+`r formatC(tmdl.actid.count, big.mark = ",")` unique combinations of actionId, assessmentUnitId and pollutant. `r formatC(tmdl.noactid.count, big.mark = ",")` unique combinations of assessmentUnitId and pollutant.
+
+`r  if(params$filt.dt == TRUE){paste0("<h1>Filtered TMDL Results</h1>", "The data table below displays all TMDL records matching filters selected by the user. Each row represents a unique combination of pollutant, assessment unit, and action id.")}`
+
+
+```{r filt.df.section, echo=FALSE}
+
+# display filtered data table of tmdl results if user has selected it
+if(params$filt.dt == TRUE){
+  DT::datatable(tmdl.df)
+}
+
+```
+
+`r  if(params$prod.output.plot == TRUE | prod.output.data == TRUE){paste0("<h1>TMDL Production History</h1>", "The data table below displays all TMDL records matching filters selected by the user. Each row represents a unique combination of pollutant, assessment unit, and action id.")}`
+
+prod.output.plot: TRUE
+  prod.output.data: TRUE
