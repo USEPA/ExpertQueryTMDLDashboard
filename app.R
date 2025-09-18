@@ -24,236 +24,264 @@ ui <- tagList(
   ),
   shiny::includeHTML("app/header.html"),
   page_sidebar(
-  # url options
-  tags$head(
-    tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropogation(); });")),
-    tags$style(HTML("
+    # url options
+    tags$head(
+      tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropogation(); });")),
+      tags$style(HTML("
                     .accordion-button {
                     background-color: #005EA2;
                     color: white;
                     }
-                    
+
                     .accordion-button:not(.collapsed) {
                     background-color: #005EA2;
                     color: white;
                     }
-                    "
-                    ))
-  ),
-  # title and update information
-  title = div(
-    br(),
-    tags$h1("National Summary of TMDLs in ATTAINS", style = "margin-bottom: 0;"),
-    tags$h3(htmlOutput("update"))
-  ),
-  # create sidebar for user inputs
-  sidebar = sidebar(
-    sliderInput("year", "Year:", min = 1975, max = max_year, value = c(1975, max_year), sep = ""),
-    selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
-    selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
-    selectInput("pollgroup", "Pollutant Group:", choices = sort(unique(pollutants_groups$pollutantGroup)), selected = NULL, multiple = TRUE),
-    selectInput("pollutant", "Pollutant:", choices = sort(unique(pollutants_groups$pollutant)), selected = NULL, multiple = TRUE),
-    selectInput("addparam", "Addressed Parameter:", choices = sort(unique(parameters$addressedParameter)), selected = NULL, multiple = TRUE),
-    actionButton("update", "Update"),
-    actionButton("clear", "Clear")
-  ),
-  # create tabs
-  navset_card_underline(
-    # title for all tabs
-    title = "Tabs:",
-    # create filtered results panel
-    nav_panel(
-      "Summary",
-      accordion(
-        open = c("desc", "count", "instruct"),
-        accordion_panel(
-          title = span("TMDL Count", style = "font-size: 16px"),
-          icon = bsicons::bs_icon("123"),
-          tags$p(htmlOutput("tmdl1")),
-          value = "count"
+                    "))
+    ),
+    # title and update information
+    title = div(
+      br(),
+      tags$h1("National Summary of TMDLs in ATTAINS", style = "margin-bottom: 0;"),
+      tags$h3(htmlOutput("update"))
+    ),
+    # create sidebar for user inputs
+    sidebar = sidebar(
+      sliderInput("year", "Year:", min = 1975, max = max_year, value = c(1975, max_year), sep = ""),
+      selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
+      selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
+      selectInput("pollgroup", "Pollutant Group:", choices = sort(unique(pollutants_groups$pollutantGroup)), selected = NULL, multiple = TRUE),
+      selectInput("pollutant", "Pollutant:", choices = sort(unique(pollutants_groups$pollutant)), selected = NULL, multiple = TRUE),
+      selectInput("addparam", "Addressed Parameter:", choices = sort(unique(parameters$addressedParameter)), selected = NULL, multiple = TRUE),
+      actionButton("update", "Update"),
+      actionButton("clear", "Clear")
+    ),
+    # create tabs
+    navset_card_underline(
+      # title for all tabs
+      title = "Tabs:",
+      # create filtered results panel
+      nav_panel(
+        "Summary",
+        accordion(
+          open = c("desc", "count", "instruct"),
+          accordion_panel(
+            title = span("TMDL Count", style = "font-size: 16px"),
+            icon = bsicons::bs_icon("123"),
+            tags$p(htmlOutput("tmdl1")),
+            value = "count"
+          ),
+          accordion_panel(
+            title = "Description",
+            icon = bsicons::bs_icon("file-earmark-text"),
+            tags$p(htmlOutput("cwa")),
+            value = "desc"
+          ),
+          accordion_panel(
+            title = "Dashboard Instructions",
+            icon = bsicons::bs_icon("person-workspace"),
+            tags$p(htmlOutput("instructions")),
+            value = "instruct"
+          )
+        )
+      ),
+      nav_panel(
+        "Filtered TMDL Results",
+        radioButtons(
+          inputId = "filt_select",
+          label = "Select TMDL Count Method:",
+          choices = c(
+            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+          ),
+          selected = "reactive_df",
+          width = "100%"
         ),
-        accordion_panel(
-          title = "Description",
-          icon = bsicons::bs_icon("file-earmark-text"),
-          tags$p(htmlOutput("cwa")),
-          value = "desc"
+        downloadButton("download_df", "Download Data"),
+        DTOutput("table")
+      ),
+      # create tmdl production history tab
+      nav_panel(
+        "TMDL Production History",
+        radioButtons(
+          inputId = "prod_select",
+          label = "Select TMDL Count Method:",
+          choices = c(
+            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+          ),
+          selected = "reactive_df",
+          width = "100%"
         ),
-        accordion_panel(
-          title = "Dashboard Instructions",
-          icon = bsicons::bs_icon("person-workspace"),
-          tags$p(htmlOutput("instructions")),
-          value = "instruct"
+        # add bar graph panel
+        accordion(
+          accordion_panel(
+            title = "Filled Area Graph",
+            icon = bsicons::bs_icon("graph-up"),
+            plotly::plotlyOutput("historyplot")
+          ),
+          # add data table panel
+          accordion_panel(
+            title = "Data Table",
+            icon = bsicons::bs_icon("table"),
+            downloadButton("download_prodhist", "Download Data"),
+            DTOutput("prodhist")
+          )
+        )
+      ),
+      # create annual tmdl production panel
+      nav_panel(
+        "Annual TMDL Production",
+        radioButtons(
+          inputId = "annual_select",
+          label = "Select TMDL Count Method:",
+          choices = c(
+            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+          ),
+          selected = "reactive_df",
+          width = "100%"
+        ),
+        # add bar graph panel
+        accordion(
+          accordion_panel(
+            title = "Bar Graph",
+            icon = bsicons::bs_icon("bar-chart"),
+            plotly::plotlyOutput("annual")
+          ),
+          # add data table panel
+          accordion_panel(
+            title = "Data Table",
+            icon = bsicons::bs_icon("table"),
+            downloadButton("download_annual", "Download Data"),
+            DTOutput("annualtable")
+          )
+        )
+      ),
+      # create pollutant panel
+      nav_panel(
+        "Pollutants",
+        radioButtons(
+          inputId = "poll_radio",
+          label = "Select TMDL Count Method:",
+          choices = c(
+            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
+            "By Unique Pollution/Assessment Unit" = "wb_df"
+          ),
+          selected = "reactive_df",
+          width = "100%"
+        ),
+        # add pie graph panel
+        accordion(
+          accordion_panel(
+            title = "Pie Graph",
+            icon = bsicons::bs_icon("pie-chart"),
+            plotly::plotlyOutput("pie"), uiOutput("back")
+          ),
+          # add data table panel
+          accordion_panel(
+            title = "Data Table",
+            icon = bsicons::bs_icon("table"),
+            downloadButton("download_pollutant", "Download Data"),
+            DTOutput("pietable")
+          )
+        )
+      ),
+      # create tmdls by state panel
+      nav_panel(
+        "TMDLs By State",
+        radioButtons(
+          inputId = "state_select",
+          label = "Select TMDL Count Method:",
+          choices = c(
+            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
+            "By Unique Pollution/Assessment Unit" = "wb_df"
+          ),
+          selected = "reactive_df",
+          width = "100%"
+        ),
+        # add bar graph panel
+        accordion(
+          accordion_panel(
+            title = "Bar Graph",
+            icon = bsicons::bs_icon("bar-chart"),
+            plotly::plotlyOutput("bystate")
+          ),
+          # add data table panel
+          accordion_panel(
+            title = "Data Table",
+            icon = bsicons::bs_icon("table"),
+            downloadButton("download_state", "Download Data"),
+            DTOutput("statetable")
+          )
+        )
+      ),
+      nav_panel(
+        "Download Tables and Figures",
+        radioButtons(
+          inputId = "download.format",
+          label = strong("Select Download File Type"),
+          choices = list(
+            "PDF - contains all selected tables and figures*",
+            "Word Doc - contains all selected tables and figures*",
+            "Individual Files - a zip folder containing tables (.csv) and figures (.png)"
+          ),
+          width = "100%"
+        ),
+        tags$p(em("*PDF and Word Doc selections not reccomended when 'Data Table' is selected for 'Filtered TMDL Results")),
+        downloadButton("download.results", "Download Selected Output"),
+        checkboxGroupInput(
+          inputId = "filt.output",
+          label = strong("Filtered TMDL Results"),
+          choices = c("Data Table"),
+          selected = c("Data Table"),
+          width = "100%"
+        ),
+        checkboxGroupInput(
+          inputId = "prod.output",
+          label = strong("TMDL Production History"),
+          choices = c("Data Table", "Filled Area Graph"),
+          selected = c("Data Table", "Filled Area Graph"),
+          width = "100%"
+        ),
+        checkboxGroupInput(
+          inputId = "annual.output",
+          label = strong("Annual TMDL Production"),
+          choices = c("Data Table", "Bar Graph"),
+          selected = c("Data Table", "Bar Graph"),
+          width = "100%"
+        ),
+        radioButtons(
+          inputId = "count.methods",
+          label = strong("TMDL Count Method (for Pollutants and TMDLs by State)"),
+          choices = c(
+            "By Unique Pollution/Assessment Unit/Action ID" = "actid",
+            "By Unique Pollution/Assessment Unit" = "noactid"
+          ),
+          selected = c("actid"),
+          width = "100%"
+        ),
+        checkboxGroupInput(
+          inputId = "poll.output",
+          label = strong("Pollutants"),
+          choices = c(
+            "Data Table (by Pollutant Group)" = "dt.pollgroup",
+            "Data Table (by Pollutants within each Pollutant Group)" = "dt.poll",
+            "Single Pie Chart (by Pollutant Group)" = "pie.pollgroup",
+            "Multiple Pie Charts (by Pollutants within each Pollutant Group" = "pie.poll"
+          ),
+          selected = c("dt.pollgroup", 
+                       "pie.pollgroup"),
+          width = "100%"
+        ),
+        checkboxGroupInput(
+          inputId = "state.output",
+          label = strong("TMDLs by State"),
+          choices = c("Data Table", "Bar Graph"),
+          selected = c("Data Table", "Bar Graph"),
+          width = "100%"
         )
       )
-    ),
-    nav_panel(
-      "Filtered TMDL Results",
-      radioButtons(
-        inputId = "filt_select",
-        label = "Select TMDL Count Method:",
-        choices = c(
-          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
-        ),
-        selected = "reactive_df",
-        width = '100%'
-      ),
-      downloadButton("download_df", "Download Data"),
-      DTOutput("table")
-    ),
-    # create tmdl production history tab
-    nav_panel(
-      "TMDL Production History",
-      radioButtons(
-        inputId = "prod_select",
-        label = "Select TMDL Count Method:",
-        choices = c(
-          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
-        ),
-        selected = "reactive_df",
-        width = '100%'
-      ),
-      # add bar graph panel
-      accordion(
-        accordion_panel(
-          title = "Filled Area Graph",
-          icon = bsicons::bs_icon("graph-up"),
-          plotly::plotlyOutput("historyplot")
-        ),
-        # add data table panel
-        accordion_panel(
-          title = "Data Table",
-          icon = bsicons::bs_icon("table"),
-          downloadButton("download_prodhist", "Download Data"),
-          DTOutput("prodhist")
-        )
-      )
-    ),
-    # create annual tmdl production panel
-    nav_panel(
-      "Annual TMDL Production",
-      radioButtons(
-        inputId = "annual_select",
-        label = "Select TMDL Count Method:",
-        choices = c(
-          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
-        ),
-        selected = "reactive_df",
-        width = '100%'
-      ),
-      # add bar graph panel
-      accordion(
-        accordion_panel(
-          title = "Bar Graph",
-          icon = bsicons::bs_icon("bar-chart"),
-          plotly::plotlyOutput("annual")
-        ),
-        # add data table panel
-        accordion_panel(
-          title = "Data Table",
-          icon = bsicons::bs_icon("table"),
-          downloadButton("download_annual", "Download Data"),
-          DTOutput("annualtable")
-        )
-      )
-    ),
-    # create pollutant panel
-    nav_panel(
-      "Pollutants",
-      radioButtons(
-        inputId = "poll_radio",
-        label = "Select TMDL Count Method:",
-        choices = c(
-          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
-          "By Unique Pollution/Assessment Unit" = "wb_df"
-        ),
-        selected = "reactive_df",
-        width = '100%'
-      ),
-      # add pie graph panel
-      accordion(
-        accordion_panel(
-          title = "Pie Graph",
-          icon = bsicons::bs_icon("pie-chart"),
-          plotly::plotlyOutput("pie"), uiOutput("back")
-        ),
-        # add data table panel
-        accordion_panel(
-          title = "Data Table",
-          icon = bsicons::bs_icon("table"),
-          downloadButton("download_pollutant", "Download Data"),
-          DTOutput("pietable")
-        )
-      )
-    ),
-    # create tmdls by state panel
-    nav_panel(
-      "TMDLs By State",
-      radioButtons(
-        inputId = "state_select",
-        label = "Select TMDL Count Method:",
-        choices = c(
-          "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
-          "By Unique Pollution/Assessment Unit" = "wb_df"
-        ),
-        selected = "reactive_df",
-        width = '100%'
-      ),
-      # add bar graph panel
-      accordion(
-        accordion_panel(
-          title = "Bar Graph",
-          icon = bsicons::bs_icon("bar-chart"),
-          plotly::plotlyOutput("bystate")
-        ),
-        # add data table panel
-        accordion_panel(
-          title = "Data Table",
-          icon = bsicons::bs_icon("table"),
-          downloadButton("download_state", "Download Data"),
-          DTOutput("statetable")
-        )
-      )
-    ),
-    nav_panel(
-      "Download Tables and Figures",
-      radioButtons(inputId = "download.format",
-                  label = strong("Select Download File Type"),
-                  choices = list("PDF - contains all selected tables and figures*", 
-                                 "Word Doc - contains all selected tables and figures*",
-                                 "Individual Files - a zip folder containing tables (.csv) and figures (.png)"),
-                  width = '100%'),
-      tags$p(em("*PDF and Word Doc selections not reccomended when 'Data Table' is selected for 'Filtered TMDL Results")),
-      downloadButton("download.results", "Download Selected Output"),
-      checkboxGroupInput(inputId = "filt.output", 
-                         label = strong("Filtered TMDL Results"),
-                  choices = c("Data Table"),
-                  selected = c("Data Table"),
-                  width = '100%'),
-      checkboxGroupInput(inputId = "prod.output", 
-                         label = strong("TMDL Production History"),
-                         choices = c("Data Table", "Filled Area Graph"),
-                         selected = c("Data Table", "Filled Area Graph"),
-                         width = '100%'),
-      checkboxGroupInput(inputId = "annual.output", 
-                         label = strong("Annual TMDL Production"),
-                         choices = c("Data Table", "Bar Graph"),
-                         selected = c("Data Table", "Bar Graph"),
-                         width = '100%'),
-      checkboxGroupInput(inputId = "poll.output", 
-                         label = strong("Pollutants"),
-                         choices = c("Data Table", "Single Pie Chart (by Pollutant Group)",
-                                     "Multiple Pie Charts (by Pollutants within each Pollutant Group"),
-                         selected = c("Data Table", "Single Pie Chart (by Pollutant Group)"),
-                         width = '100%'),
-      checkboxGroupInput(inputId = "state.output", 
-                         label = strong("TMDLs by State"),
-                         choices = c("Data Table", "Bar Graph"),
-                         selected = c("Data Table", "Bar Graph"),
-                         width = '100%')
     )
-  )
-),
-shiny::includeHTML("app/footer.html")
+  ),
+  shiny::includeHTML("app/footer.html")
 )
 
 
@@ -344,7 +372,7 @@ server <- function(input, output, session) {
 
     updateSelectInput(session, "pollutant", selected = "")
   })
-  
+
   # create reactive df to count waterbody and pollutant combinations
   wb_df <- reactive({
     df <- reactive_df() %>%
@@ -353,17 +381,17 @@ server <- function(input, output, session) {
         assessmentUnitName
       ) %>%
       dplyr::distinct()
-    
+
     return(df)
   })
-  
+
   # create reactive waterbody tally
   wbtally_df <- reactive({
     df <- wb_df() %>%
       dplyr::group_by(state) %>%
       dplyr::arrange(state) %>%
       dplyr::tally()
-    
+
     return(df)
   })
 
@@ -432,7 +460,7 @@ server <- function(input, output, session) {
       "Expert Query National Downloads", "</a>"
     ))
   })
-  
+
   # add user instructions for dashboard
   output$instructions <- renderText({
     HTML(paste0(
@@ -468,7 +496,7 @@ server <- function(input, output, session) {
     return(df)
   })
 
-  
+
   # create reactive value for pollutant group selection (user input) to use in "Pollutants" tab plot and table
   current_category <- reactiveVal()
 
@@ -480,11 +508,11 @@ server <- function(input, output, session) {
 
   # create reactive df to count tmdls by pollutant group, unless a pollutant group is selected to use for "Pollutants" plot and table
   pies_data <- reactive({
-    
     df <- switch(input$poll_radio,
-                 "reactive_df" = reactive_df(),
-                 "wb_df" = wb_df())
-    
+      "reactive_df" = reactive_df(),
+      "wb_df" = wb_df()
+    )
+
     if (!length(current_category())) {
       return(dplyr::count(df, pollutantGroup))
     }
@@ -664,15 +692,15 @@ server <- function(input, output, session) {
 
   # create reactive state/tmdls data frame
   state_df <- reactive({
-    
     df <- switch(input$state_select,
-                 "reactive_df" = reactive_df(),
-                 "wb_df" = wb_df()) %>%
+      "reactive_df" = reactive_df(),
+      "wb_df" = wb_df()
+    ) %>%
       dplyr::distinct() %>%
       dplyr::group_by(state) %>%
       dplyr::arrange(state) %>%
       dplyr::tally()
-    
+
     return(df)
   })
 
@@ -683,13 +711,12 @@ server <- function(input, output, session) {
         dplyr::rename(
           "TMDL Count" = n,
           "State" = state
-        )
-      ,
+        ),
       escape = FALSE
     )
   })
 
-  #create state tmdl count bar plot
+  # create state tmdl count bar plot
   output$bystate <- renderPlotly({
     df <- state_df()
 
@@ -741,57 +768,53 @@ server <- function(input, output, session) {
           anchor = "center"
         ),
         xaxis = list(title = "Fiscal Year Established"),
-        yaxis = list(title = "Number of TMDLs",
-                     range = list(0, max(df$CUMMULATIVETMDLS) + 0.2 * max(df$CUMMULATIVETMDLS)))
+        yaxis = list(
+          title = "Number of TMDLs",
+          range = list(0, max(df$CUMMULATIVETMDLS) + 0.2 * max(df$CUMMULATIVETMDLS))
+        )
       )
     plot
   })
-  
+
   output$dash.output <- reactive({
-    
-    file.type <- dplyr::case_when(input$download.format == "PDF - contains all selected tables and figures*" ~ ".pdf",
-                                  input$download.format == "Word Doc - contains all selected tables and figures*" ~ ".docx",
-                                  input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)" ~ ".zip")
-    
-    if(input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)") {
+    file.type <- dplyr::case_when(
+      input$download.format == "PDF - contains all selected tables and figures*" ~ ".pdf",
+      input$download.format == "Word Doc - contains all selected tables and figures*" ~ ".docx",
+      input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)" ~ ".zip"
+    )
+
+    if (input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)") {
       file.list <- list()
-      
-      if(input$filt.output == "Data Table") {
+
+      if (input$filt.output == "Data Table") {
         file.list <- append(file.list, shiny::plotPNG(func = output$table))
       }
-      
-      if(input$filt.output == "Data Table") {
+
+      if (input$filt.output == "Data Table") {
         file.list <- append(file.list, shiny::plotPNG(func = output$table))
       }
-      
     }
-    
+
     return(file.list)
   })
 
-  
+
   output$download.results <- downloadHandler(
-    
+
     # file.type <- dplyr::case_when(input$download.format == "PDF - contains all selected tables and figures*" ~ ".pdf",
     #                               input$download.format == "Word Doc - contains all selected tables and figures*" ~ ".docx",
     #                               input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)" ~ ".zip"),
-    # 
+    #
     # file.date <- format(Sys.Date(), "%m_%d_%Y"),
-    
     filename = function() {
       paste0("TMDLDashboardExport_.zip")
     },
-    
     content = function(file) {
-      
       files <- output$dash.output
-      
+
       zip::zip(zipfile = file, files = files)
-      
     },
-    
     contentType = "application.zip"
-  
   )
 }
 

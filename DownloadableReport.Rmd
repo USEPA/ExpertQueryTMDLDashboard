@@ -17,15 +17,16 @@ params:
   prod.output.data: TRUE
   annual.output.plot: TRUE
   annual.output.data: TRUE
-  poll.output.plot: TRUE
-  poll.output.data: TRUE
-  poll.actid: TRUE
+  count.method: "actid"
+  dt.poll: TRUE
+  dt.pollgroup: TRUE
+  pie.pollgroup: TRUE
+  pie.poll: TRUE
   state.output.plot: TRUE
   state.output.data: TRUE
-  state.actid: TRUE
 ---
 
-```{r setup, echo = FALSE}
+```{r setup, echo=FALSE, message=FALSE}
 load("EQ_data.RData")
 
 library(dplyr)
@@ -38,7 +39,7 @@ library(stringi)
 
 This report was generated from EPA's internal TMDL Dashboard on `r format(Sys.Date(), "%B %d, %Y")`. The Expert Query data used to generate the following tables and figures was updated on `r update.tmdls`.
 
-```{r params.df, echo=FALSE}
+```{r params.df, echo=FALSE, message=FALSE}
 
 desc.param <- c("Date Range For Fiscal Year Established",
                 "EPA Region(s)",
@@ -284,11 +285,37 @@ DT::datatable(annual_data)
 
 ```
 
-`r  if(params$poll.output.plot == TRUE | params$poll.output.data == TRUE){paste0("<h1>Pollutants</h1>", "The output below summarizes annual TMDL production. Each record represents a unique combination of pollutant, assessment unit, and action id.")}`
+`r  if(params$count.method == "actid"){tmdl.method <- "Each record represents a unique combination of pollutant, assessment unit and action id."}`
 
-Need to figure out how to switch between two counting methods here using poll.actid. When TRUE, include actids as part of count, when false only AUID/pollutant.
+`r  if(params$count.method == "noactid"){tmdl.method <- "Each record represents a unique combination of pollutant and assessment unit."}`
 
-poll.output.plot: TRUE
-  poll.output.data: TRUE
+`r poll.type <- dplyr::case_when(params$dt.poll == TRUE | params$pie.poll == TRUE ~ "pollutant", params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE ~ "pollutant group", params$dt.poll == TRUE | params$pie.poll == TRUE & params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE ~ "pollutant and pollutant group")`
+
+
+`r  if(params$dt.poll == TRUE | params$dr.pollgroup == TRUE | params$pie.pollgroup | params$pie.poll == TRUE){paste0("<h1>Pollutants</h1>", "The output below summarizes TMDLs by ", poll.type, ". ", tmdl.method)}`
+
+```{r poll.plot}
+
+if(params$dt.poll == TRUE | params$dt.pollgroup == TRUE | params$pie.pollgroup |
+   params$pie.poll == TRUE){
+  
+  poll.df <- filt.df
+  
+  if(params$count.method == "noactid") {
+    
+    poll.df <- poll.df %>%
+      dplyr::select(
+        region, state, pollutant, pollutantGroup, assessmentUnitId,
+        assessmentUnitName
+      ) %>%
+      dplyr::distinct()
+  }
+}
+
+#if(params$pie.poll == TRUE)
+
+```
+
+
   state.output.plot: TRUE
   state.output.data: TRUE
