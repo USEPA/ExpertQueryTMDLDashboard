@@ -279,22 +279,32 @@ bar_annual
 
 ```{r annual.dt, echo=FALSE}
 
+# create annual data table
 if(params$annual.output.data == TRUE) {
 DT::datatable(annual_data)
 }
 
 ```
 
-`r  if(params$count.method == "actid"){tmdl.method <- "Each record represents a unique combination of pollutant, assessment unit and action id."}`
 
-`r  if(params$count.method == "noactid"){tmdl.method <- "Each record represents a unique combination of pollutant and assessment unit."}`
+```{r poll.text.setup, echo=FALSE}
 
-`r poll.type <- dplyr::case_when(params$dt.poll == TRUE | params$pie.poll == TRUE ~ "pollutant", params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE ~ "pollutant group", params$dt.poll == TRUE | params$pie.poll == TRUE & params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE ~ "pollutant and pollutant group")`
+# determine if any pollutant related items were selected by user and run text prep if they were
+if(params$dt.poll == TRUE | params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE | params$pie.poll == TRUE){
+  
+  # create text for tmdl count method
+  if(params$count.method == "actid"){tmdl.method <- "Each record represents a unique combination of pollutant, assessment unit and action id."} else { tmdl.method <- "Each record represents a unique combination of pollutant and assessment unit."
+  }
+  
+  # create text for pollutant type
+  poll.type <- dplyr::case_when(params$dt.poll == TRUE | params$pie.poll == TRUE & params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE ~ "pollutant and pollutant group", params$dt.poll == TRUE | params$pie.poll == TRUE ~ "pollutant", params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE ~ "pollutant group")
+}
+```
 
 
-`r  if(params$dt.poll == TRUE | params$dr.pollgroup == TRUE | params$pie.pollgroup | params$pie.poll == TRUE){paste0("<h1>Pollutants</h1>", "The output below summarizes TMDLs by ", poll.type, ". ", tmdl.method)}`
+`r  if(params$dt.poll == TRUE | params$dt.pollgroup == TRUE | params$pie.pollgroup == TRUE | params$pie.poll == TRUE){paste0("<h1>Pollutants</h1>", "The output below summarizes TMDLs by ", poll.type, ". ", tmdl.method)}`
 
-```{r poll.plot}
+```{r poll.plot, echo=FALSE}
 
 if(params$dt.poll == TRUE | params$dt.pollgroup == TRUE | params$pie.pollgroup |
    params$pie.poll == TRUE){
@@ -312,10 +322,67 @@ if(params$dt.poll == TRUE | params$dt.pollgroup == TRUE | params$pie.pollgroup |
   }
 }
 
-#if(params$pie.poll == TRUE)
-
 ```
 
 
+ `r if(params$pie.pollgroup == TRUE | params$dt.pollgroup) {paste0("<h2> By Pollutant Group</h2>"}` 
+ 
+```{r pg.pie}
+
+if(params$pie.pollgroup == TRUE | params$dt.pollgroup == TRUE) {
+  
+  pollgroup.df <- poll.df %>%
+    dplyr::count(pollutantGroup)
+}
+
+if(params$pie.pollgroup == TRUE){
+   
+  pollgroup.pie.df <- setNames(pollgroup.df, c("labels", "values")) %>%
+      dplyr::mutate(
+        percent = round(values / sum(values), 5),
+        labs_w_vals = paste(labels, " (", scales::comma(values), ")", sep = "")
+      )
+
+    pie_plot <- plotly::plot_ly(
+      data = pollgroup.pie.df,
+      labels = ~labs_w_vals,
+      values = ~values,
+      type = "pie",
+      textinfo = "none",
+      hoverinfo = "label+value+percent",
+      customdata = ~labels
+    ) %>%
+      plotly::layout(
+        title = list(
+          text = "TMDLs by Pollutant Group",
+          x = 0.5,
+          xanchor = "center",
+          yanchor = "bottom",
+          xref = "paper",
+          yref = "paper",
+          y = 1.2
+        ),
+        # annotations = list(
+        #   x = 0.5,
+        #   y = -0.4,
+        #   xref = "paper",
+        #   yref = "paper",
+        #   showarrow = FALSE,
+        #   text = ifelse(is.null(poll_select),
+        #     "click on a Pollutant Group in Plot <br> to see the relative contribution of its Pollutants",
+        #     ""
+        #   )
+        # ),
+        margin = list(b = 100, t = 100),
+        showlegend = TRUE
+      ) 
+}
+
+if(params$dt.pollgroup == TRUE){}
+
+
+```
+ 
+ 
   state.output.plot: TRUE
   state.output.data: TRUE
