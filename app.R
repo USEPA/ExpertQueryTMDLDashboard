@@ -212,72 +212,6 @@ ui <- tagList(
             DTOutput("statetable")
           )
         )
-      ),
-      nav_panel(
-        "Download Tables and Figures",
-        radioButtons(
-          inputId = "download.format",
-          label = strong("Select Download File Type"),
-          choices = list(
-            "PDF - contains all selected tables and figures*",
-            "Word Doc - contains all selected tables and figures*",
-            "Individual Files - a zip folder containing tables (.csv) and figures (.png)"
-          ),
-          width = "100%"
-        ),
-        tags$p(em("*PDF and Word Doc selections not reccomended when 'Data Table' is selected for 'Filtered TMDL Results")),
-        downloadButton("download.results", "Download Selected Output"),
-        checkboxGroupInput(
-          inputId = "filt.output",
-          label = strong("Filtered TMDL Results"),
-          choices = c("Data Table"),
-          selected = c("Data Table"),
-          width = "100%"
-        ),
-        checkboxGroupInput(
-          inputId = "prod.output",
-          label = strong("TMDL Production History"),
-          choices = c("Data Table", "Filled Area Graph"),
-          selected = c("Data Table", "Filled Area Graph"),
-          width = "100%"
-        ),
-        checkboxGroupInput(
-          inputId = "annual.output",
-          label = strong("Annual TMDL Production"),
-          choices = c("Data Table", "Bar Graph"),
-          selected = c("Data Table", "Bar Graph"),
-          width = "100%"
-        ),
-        radioButtons(
-          inputId = "count.methods",
-          label = strong("TMDL Count Method (for Pollutants and TMDLs by State)"),
-          choices = c(
-            "By Unique Pollution/Assessment Unit/Action ID" = "actid",
-            "By Unique Pollution/Assessment Unit" = "noactid"
-          ),
-          selected = c("actid"),
-          width = "100%"
-        ),
-        checkboxGroupInput(
-          inputId = "poll.output",
-          label = strong("Pollutants"),
-          choices = c(
-            "Data Table (by Pollutant Group)" = "dt.pollgroup",
-            "Data Table (by Pollutants within each Pollutant Group)" = "dt.poll",
-            "Single Pie Chart (by Pollutant Group)" = "pie.pollgroup",
-            "Multiple Pie Charts (by Pollutants within each Pollutant Group" = "pie.poll"
-          ),
-          selected = c("dt.pollgroup", 
-                       "pie.pollgroup"),
-          width = "100%"
-        ),
-        checkboxGroupInput(
-          inputId = "state.output",
-          label = strong("TMDLs by State"),
-          choices = c("Data Table", "Bar Graph"),
-          selected = c("Data Table", "Bar Graph"),
-          width = "100%"
-        )
       )
     )
   ),
@@ -775,47 +709,6 @@ server <- function(input, output, session) {
       )
     plot
   })
-
-  output$dash.output <- reactive({
-    file.type <- dplyr::case_when(
-      input$download.format == "PDF - contains all selected tables and figures*" ~ ".pdf",
-      input$download.format == "Word Doc - contains all selected tables and figures*" ~ ".docx",
-      input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)" ~ ".zip"
-    )
-
-    if (input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)") {
-      file.list <- list()
-
-      if (input$filt.output == "Data Table") {
-        file.list <- append(file.list, shiny::plotPNG(func = output$table))
-      }
-
-      if (input$filt.output == "Data Table") {
-        file.list <- append(file.list, shiny::plotPNG(func = output$table))
-      }
-    }
-
-    return(file.list)
-  })
-
-
-  output$download.results <- downloadHandler(
-
-    # file.type <- dplyr::case_when(input$download.format == "PDF - contains all selected tables and figures*" ~ ".pdf",
-    #                               input$download.format == "Word Doc - contains all selected tables and figures*" ~ ".docx",
-    #                               input$download.format == "Individual Files - a zip folder containing tables (.csv) and figures (.png)" ~ ".zip"),
-    #
-    # file.date <- format(Sys.Date(), "%m_%d_%Y"),
-    filename = function() {
-      paste0("TMDLDashboardExport_.zip")
-    },
-    content = function(file) {
-      files <- output$dash.output
-
-      zip::zip(zipfile = file, files = files)
-    },
-    contentType = "application.zip"
-  )
 }
 
 # Run the app
