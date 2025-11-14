@@ -659,7 +659,6 @@ server <- function(input, output, session) {
       write.csv(data(), file)
     }
   )
-}
 
 
   # create state tmdl count bar plot
