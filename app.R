@@ -649,6 +649,18 @@ server <- function(input, output, session) {
       escape = FALSE
     )
   })
+  
+ # download handler for state and tmdl counts
+   output$download_state <- downloadHandler(
+    filename = function() {
+      paste("data-", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(data(), file)
+    }
+  )
+}
+
 
   # create state tmdl count bar plot
   output$bystate <- renderPlotly({
