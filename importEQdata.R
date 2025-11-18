@@ -46,7 +46,7 @@ filt.df <- orig.df %>%
   dplyr::ungroup()
 
 # create df of parameters
-parameters <- orig.df %>%
+parameters <-filt.df %>%
   dplyr::select(addressedParameter, addressedParameters) %>%
   distinct() %>%
   dplyr::arrange(addressedParameter)
