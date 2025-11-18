@@ -1,0 +1,195 @@
+---
+title: "TMDL Data Analysis Considerations"
+author: Miranda Chien-Hale and Hillary Marler
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: word_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(rExpertQuery)
+library(dplyr)
+library(knitr)
+library(janitor)
+```
+
+## TMDL Entries in ATTAINS
+
+```{r nat.download, include = FALSE}
+
+# download 
+nat.tmdls <- rExpertQuery::EQ_NationalExtract("tmdl")
+```
+
+EPA has responsibilities for ensuring the development and implementation of pollution targets, known as total maximum daily loads (TMDL). A TMDL is the sum of the individual Wasteload allocations (WLAs) for point sources ^[The portion of a receiving water’s loading capacity (i.e. the greatest amount of loading that a water can receive without violating water quality standards) that is allocated to one of its existing or future point sources of pollution. WLAs constitute a type of water quality-based effluent limitation.], load allocations (LAs) for non-point sources^[The portion of a receiving water’s loading capacity that is attributed either to one of its existing or future nonpoint sources of pollution or to natural background sources. Load allocations are best estimates of the loading, which may range from reasonably accurate estimates to gross allotments, depending on the availability of data and appropriate techniques for predicting the loading. Wherever possible, natural and nonpoint source loads should be distinguished.] and natural background. In other words, the TMDL is a numeric target for a specific pollutant, reflecting the maximum amount of the pollutant that a water body can contain and still be considered in compliance with water quality st
+
+How a TMDL calculation or formula is developed to address one pollutant in one waterbody has expanded over time and varies significantly across state and EPA Region. Overall, developing a TMDL results in a planning document that is uploaded in ATTAINS that, when implemented, should lead to waterbodies meeting water quality standards.
+
+Today, the ATTAINS system serves as the national repository for approved Total Maximum Daily Load (TMDL) documents and other accepted plans (i.e., “4B Restoration Approaches,” “Alternative Restoration Approaches” and “Protection” plans). While key documents and metadata uploaded to ATTAINS are not equivalent to official TMDL records maintained for regulatory or legal purposes, complete submission of Action Entries into ATTAINS fosters transparency of data across states. Approaches for ATTAINS-based TMDL tracking and reporting can notably impact the number of unique TMDLs that result, as well as the interpretation of water quality progress nationally.^[ATTAINS-generated TMDL reporting and tracking do not supplant CWA regulations or existing TMDL guidance.] Users are encouraged to review the official TMDL planning documentation submitted for EPA Action. At the national level, EPA’s method for counting TMDLs using ATTAINS is as follows:
+
+`1 TMDL = 1 unique assessment unit / pollutant / Action ID combination`
+
+It is expected that TMDL reports and other Action in ATTAINS will contain consistent Action information for the public benefit and ensure accurate performance measures calculations for EPA.
+
+When downloaded on `r format(Sys.Date(), "%B %d, %Y")`, the Expert Query National Extract for TMDLs contained `r formatC(nrow(nat.tmdls), big.mark = ",")` results.^[A single Expert Query data extract may result in a table that has many-to-many relationships. Simple counting the number of rows in the clean National TMDL data set is not an accurate way to count the total number of TMDLs. This is because some fields (ex: addressedParameter, npdesIdentifier, etc.) may contain varying information related to the same assessmentUnitId/pollutant/actionId combination. This is valid data, used to correctly describe the scope and specifics of the TMDL, however this may lead to the potential for double counting of records if not considered during data analysis. In other words, a single row with the same assessmentUnitId/pollutant/actionId combination may appear many times.] However, before using this data set to count the total number of TMDLs, some basic data cleaning steps and decisions regarding which data to retain are required. Preliminary data review of the data identified several quality control actions that need to be made before TMDL counts can be accurately reported:
+
+1)  Delete duplicate records in the data set
+
+2)  Some rows contain an actionId, but no assessementUnitId or pollutant.
+
+3)  Some additional rows contain an actionId and assessmentUnitId, but no pollutant.
+
+4)  Multiple actionIds may be associated with the same assessmentUnitId and pollutant combination.
+
+5)  Multiple fields (ex: addressedParameter, npdesIdentifier, etc.) may contain varying information related to the same assessmentUnitId/pollutant/actionId combination, leading to the potential for double counting of records.
+
+It is strongly recommended that each Region review each state’s TMDL entries in ATTAINS, including the associated TMDL documents, to ensure that each record represents is unique and accurate. EPA Regions are charged with verifying, and correcting if needed, all details related to each TMDL Action Entry entered in ATTAINS, including all relevant dates, associated assessment unit IDs, pollutants, and addressed parameters. As this is a large effort and intensive in terms of staff time, the following sections describe potentially useful approaches for summarizing TMDLs from a data analysis perspective.
+
+## Delete Duplicate Records
+
+```{r dups, include = FALSE}
+
+# remove dups df
+no.dups.tmdls <- nat.tmdls %>%
+  dplyr::select(-objectId) %>%
+  dplyr::distinct()
+
+# col names
+tmdl.cols <- names(no.dups.tmdls)
+
+# dups only df
+dups.df <- nat.tmdls %>%
+  dplyr::select(-objectId) %>%
+  dplyr::group_by(across(all_of(tmdl.cols))) %>%
+  dplyr::mutate(dup.count = dplyr::n()) %>%
+  dplyr::filter(dup.count > 1)
+
+# dups unique
+dups.uniq <- dups.df %>%
+  dplyr::slice_head()
+
+# dups removed
+dups.removed <- length(dups.df$actionId) - length(dups.uniq$actionId)
+  
+# summarize dups
+dups.summarize <- dups.df %>%
+  dplyr::distinct() %>%
+  dplyr::select(-dup.count) %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise(Duplicates = n())
+```
+
+The first data cleaning step is to remove duplicate rows.^[The duplicates mentioned here are true duplicates meaning all fields in a row match all fields in another row (with the exception of objectId, which is added by the database to give each entry a unique ID), so the corrective action would be to remove them.] This is a common data cleaning step when utilizing large data sets as duplicates may be introduced during steps such as data entry, collection or aggregation.
+
+In order to remove the duplicates from the National TMDL data set, we must first remove the "objectID" field as it is specifically created to be a unique identifier, so there are no duplicates in that field. Then, we can compare the rows to find exact duplicates. When we do this, we are able to find and remove `r formatC(dups.removed, big.mark = ",")` duplicate rows. This leaves us with `r formatC(nrow(no.dups.tmdls), big.mark = ",")` unique results in the data set. The table below summarizes the number of duplicates identified in each region. Duplicate rows have been removed from the data set in the draft TMDL dashboard.
+
+`r knitr::kable(dups.summarize)`
+
+## Address actionId With No assessmentUnitId or pollutant
+
+```{r no, include = FALSE}
+
+no.auid.no.poll <- no.dups.tmdls %>%
+  dplyr::filter(pollutant == "" &
+                  assessmentUnitId == "" &
+                  !is.na(actionId))
+
+# clean df
+tmdl.clean.1 <- no.dups.tmdls %>%
+  dplyr::anti_join(no.auid.no.poll)
+
+# summary
+no.ap.summary <- no.auid.no.poll %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise("Missing pollutant and assessmentUnitId" = n())
+
+# count N of records with actionId and plan summary
+count.actid.summ <- no.auid.no.poll %>%
+  dplyr::filter(!is.na(planSummaryLink),
+                !is.na(actionId)) %>%
+  dplyr::n_distinct()
+  
+
+```
+
+There are `r formatC(nrow(no.auid.no.poll), big.mark = ",")` additional rows that contain an actionId and planSummaryLink, but do not contain an assessmentUnitId or pollutant. As both assessmentUnitId and pollutant are critical components of a TMDL, these records could also be removed. After those records are removed, there are `r formatC(nrow(tmdl.clean.1), big.mark = ",")` rows remaining. The table below summarizes the number of records with no assessmentUnitId and pollutant identified from each region. No records have been removed from the draft TMDL dashboard data set as a result of this observation.
+
+`r knitr::kable(no.ap.summary, format = "simple")`
+
+## Address actionIds and assessmentUnitIds with no pollutant
+
+```{r no.poll, include = FALSE}
+
+tmdl.clean.2 <- tmdl.clean.1 %>%
+  dplyr::filter(pollutant != "")
+
+no.poll <- tmdl.clean.1 %>%
+  dplyr::filter(pollutant == "")
+
+no.poll.summarize <- no.poll %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise("Missing pollutant" = n())
+
+```
+
+There are still additional rows which contain no pollutant. As a TMDL is an assessmentUnitId/pollutant combination, rows with no pollutants could be removed as well. Filtering out the `r formatC(nrow(no.poll), big.mark = ",")` rows with no pollutant listed would leave `r formatC(nrow(tmdl.clean.2), big.mark = ",")` rows in the data set. The table shows the number of additional rows missing a pollutant for each region. No records have been removed from the draft TMDL dashboard data set as a result of this observation.
+
+`r knitr::kable(no.ap.summary, format = "simple")`
+
+## Address Multiple actionIds With Same assessmentUnitId and pollutant
+
+```{r mult.actids, include = FALSE}
+
+mult.actids <- tmdl.clean.2 %>%
+  dplyr::group_by(assessmentUnitId, pollutant) %>%
+  dplyr::mutate(actIdCount = length(unique(actionId))) %>%
+  dplyr::filter(actIdCount > 1) %>%
+  dplyr::mutate(Group = dplyr::cur_group_id())
+
+mult.actids.summarize <- mult.actids %>%
+  dplyr::group_by(region) %>%
+  dplyr::summarise("Multiple actionIds" = length(Group))
+
+```
+
+There are `r formatC(max(mult.actids$Group), big.mark = ",")` assessmentUnitId/pollutant combinations that are associated with more than one actionId. There are some assessmentUnitId/pollutant combinations associated with just `r min(mult.actids$actIdCount)`, while others are associated with as many as `r max(mult.actids$actIdCount)` actionIds. The table below displays the number of assessmentUnitId and pollutant combinations associated with more than one actionId by region. No records have been removed from the draft TMDL dashboard data set as a result of this observation.
+
+`r knitr::kable(no.ap.summary, format = "simple")`
+
+## Counting TMDLs
+
+```{r tmdl.counts, include = FALSE}
+
+tmdl.opt1 <- no.dups.tmdls %>%
+   dplyr::select(pollutant, assessmentUnitId) %>%
+  dplyr::n_distinct()
+
+tmdl.opt2 <- no.dups.tmdls %>%
+   dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup,  
+                actionId, actionName, assessmentUnitId, assessmentUnitName,
+                planSummaryLink) %>%
+  dplyr::n_distinct()
+
+header <- c("", "Option 1", "Option 2")
+
+defs <- c("Definition", "A TMDL is one unique assessmentUnitId/pollutant combination", "A TMDL is one unique assessmentUnitId/pollutant/actionID combination")
+
+cons <- c("Considerations", "We must remove actionId and other fields that may be unique to a specific actionId (ex: fiscalYearEstablished, actionId, actionName, planSummaryLink) to prevent double counting.", "We can simply count the rows in the data set that has been reduced to region, state, fiscalYearEstablished, pollutant, pollutantGroup, actionId, actionName, assessmentUnitId, assessmentUnitName, and planSummaryLink. We have verified the number of rows in this subset is equal to the number of unique assessmentUnitId/pollutant/actionId combinations.")
+
+results <- c("Results", paste0("We observe ", formatC(tmdl.opt1, big.mark = ","), " in the national data set"), paste0("We observe ",  formatC(tmdl.opt2, big.mark = ","), " in the national data set."))
+
+count.table <- data.frame(header, defs, cons, results) %>%
+  janitor::row_to_names(row_number = 1)
+
+```
+
+How we count TMDLs using ATTAINS data can notably impact the number of unique TMDLs that result.
+
+`r knitr::kable(count.table, format = "simple")`
+
+## Conclusion
+
+Due to a combination of duplicate or incomplete records and the difficulties inherent in counting “one TMDL” in a large data set containing one to many relationships between several fields, it is necessary to establish a standardized process for TMDL counts. This process needs to consider both data cleaning and the method for counts. While it would be ideal for all duplicate or incomplete records to be corrected in the TMDL data set, we recognize that this is a heavy lift in terms of staff resources. While we support any efforts at corrections, we also understand that the ability to provide useful TMDL count information cannot and should not wait until such a comprehensive review can take place. This document has been created with RMarkdown so can be easily updated using the latest TMDL national extract to provide current counts for all values described in this document.
