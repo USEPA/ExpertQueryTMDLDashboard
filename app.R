@@ -242,11 +242,47 @@ server <- function(input, output, session) {
     if (is.null(selected_pollgroup) || length(selected_pollgroup) == 0) {
       updateSelectInput(session, "pollutant", choices = sort(unique(pollutants_groups$pollutant)))
     } else {
-      filtered_pollutants <- sort(unique(pollutants_groups$POLLUTANT[pollutants_groups$pollutantGroup %in% selected_pollgroup]))
-      updateSelectInput(session, "pollutant", choices = filtered_pollutants)
+      filtered_pollutants <- sort(unique(pollutants_groups$pollutant[pollutants_groups$pollutantGroup %in% selected_pollgroup]))
+      updateSelectInput(session, "pollutant", choices = sort(unique(filtered_pollutants)))
     }
   })
 
+  # create dynamic filter so pollutant group and pollutant selection will limit addressed parameters available
+  observe({
+    selected_pollgroup <- input$pollgroup
+    selected_pollutant <- input$pollutant
+    
+    # # debugging: print selected inputs
+    # print(paste("Selected Pollutant Group:", paste(selected_pollgroup, collapse=", ")))
+    # print(paste("Selected Pollutant:", paste(selected_pollutant, collapse=", ")))
+    # 
+    
+    # filter addressed parameters by pollutant group
+    if (is.null(selected_pollgroup) || length(selected_pollgroup) == 0) {
+      filtered_pg_params <- sort(unique(addparameters_filter_pg$addressedParameter))
+    } else {
+      filtered_pg_params <- sort(unique(addparameters_filter_pg$addressedParameter[addparameters_filter_pg$pollutantGroup %in% selected_pollgroup]))
+    }
+    
+    # filter addressed paramters by pollutant 
+    if (is.null(selected_pollutant) || length(selected_pollutant) == 0) {
+      filtered_poll_params <- sort(unique(addparameters_filter_poll$addressedParameter))
+    } else {
+      filtered_poll_params <- sort(unique(addparameters_filter_poll$addressedParameter[addparameters_filter_poll$pollutant %in% selected_pollutant]))
+    }
+    
+    # compare the two lists and retain only those that are included in both
+    comb_param_filter <- intersect(filtered_pg_params, filtered_poll_params)
+    
+    # # debugging: print the filtered lists
+    # print(paste("Filtered by Pollutant Group:", paste(filtered_pg_params, collapse=", ")))
+    # print(paste("Filtered by Pollutant:", paste(filtered_poll_params, collapse=", ")))
+    # print(paste("Combined Filter:", paste(comb_param_filter, collapse=", ")))
+    
+    # update drop down menu for addressed parameters
+    updateSelectInput(session, "addparam", choices = comb_param_filter)
+  })
+  
 
   # create reactive df for plots and tables
   reactive_df <- reactiveVal(filt.df)

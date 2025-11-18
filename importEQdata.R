@@ -46,10 +46,38 @@ filt.df <- orig.df %>%
   dplyr::ungroup()
 
 # create df of parameters
-parameters <- filt.df %>%
+parameters <- orig.df %>%
   dplyr::select(addressedParameter, addressedParameters) %>%
   distinct() %>%
   dplyr::arrange(addressedParameter)
+
+# create df of pollutants, pollutant groups and addressed parameters
+addparameters_filter_poll <- orig.df %>%
+  dplyr::select(actionId, pollutant, pollutantGroup, addressedParameter) %>%
+  dplyr::distinct() %>%
+  dplyr::filter(!is.na(pollutant),
+                pollutant != "",
+                !is.na(addressedParameter),
+                addressedParameter != "") %>%
+  dplyr::group_by(actionId) %>%
+  dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; ")) %>%
+  dplyr::distinct() %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-actionId) %>%
+  dplyr::distinct() %>%
+  dplyr::arrange(addressedParameter)
+
+# create df to filter addressed params by pollutant Group
+addparameters_filter_pg <- orig.df %>%
+  dplyr::select(pollutant, pollutantGroup, addressedParameter) %>%
+  dplyr::distinct() %>%
+  dplyr::filter(!is.na(pollutant),
+                pollutant != "",
+                !is.na(addressedParameter),
+                addressedParameter != "") %>%
+  dplyr::distinct() %>%
+  dplyr::arrange(addressedParameter)
+  
 
 # remove intermediat objects
 rm(orig.df)
@@ -113,7 +141,8 @@ rm(update.base, update.dates, update.df, aus, actions)
 
 # create .RData file
 
-save(filt.df, states_regions, pollutants_groups, parameters, max_year, 
-     years_list, categories, update.tmdls, file = "EQ_data.RData")
+save(filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg,
+     pollutants_groups, parameters, max_year, years_list, categories, update.tmdls, 
+     file = "EQ_data.RData")
 }
 
