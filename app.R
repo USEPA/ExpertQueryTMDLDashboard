@@ -423,12 +423,16 @@ server <- function(input, output, session) {
       "Under section 303(d) of the CWA, EPA approves or disapproves state submissions of ",
       "Total Maximum Daily Loads (TMDLs) for impaired waters. A TMDL is the sum of the ",
       "individual Wasteload allocations (WLAs) for point sources , load allocations (LAs) for ",
-      "non-point sources and natural background (",
-      '<a href="', "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2", '" target="_blank">',
-      "40 C.F.R. 130.2(i)", "</a>", ").", "<br>", "<br>",
+      "non-point sources and natural background.",
+      "<br>", "<br>",
       "Data Source: ",
       '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">',
-      "Expert Query National Downloads", "</a>"
+      "Expert Query National Downloads", "</a>", "<br>",
+      "Data Cleaning:", "<br>",
+      "Definitions: ",
+      '<a href="', "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2", '" target="_blank">',
+      "40 C.F.R. 130.2(i)", "</a>"
+      
     ))
   })
 

@@ -3,6 +3,8 @@ library(dplyr)
 library(jsonlite)
 library(lubridate)
 library(httr2)
+library(vtree)
+library(DiagrammeR)
 
 # check resposne before downloading
 base.url <- "https://cg-7343d0e5-571f-451f-971f-8aaaf971df7e.s3-us-gov-west-1.amazonaws.com/"
@@ -30,6 +32,72 @@ if(check.api != 200) {
 if(check.api == 200) {
 orig.df <- rExpertQuery::EQ_NationalExtract("tmdl")
 
+# number of original records
+orig.n <- dim(orig.df)[1]
+
+# number of records with no pollutant
+orig.nopoll.n <- dim(orig.df %>%
+  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+    dplyr::distinct() %>%
+  dplyr::filter(is.na(pollutant) |
+                pollutant == ""))[1]
+
+# number of records with no assessment unit id
+orig.noauid.n <- dim(orig.df %>%
+                       dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                                     actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+                       dplyr::distinct() %>%
+                       dplyr::filter(is.na(assessmentUnitId) |
+                                       assessmentUnitId == ""))[1]
+
+# number of records with no assessment unit id or pollutant
+orig.noauidpoll.n <- dim(orig.df %>%
+                       dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                                     actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+                       dplyr::distinct() %>%
+                       dplyr::filter(is.na(assessmentUnitId) |
+                                       assessmentUnitId == ""|
+                                     is.na(pollutant) |
+                                       pollutant == ""))[1]
+
+# number of duplicate records
+# dups only df
+orig.dups <- orig.df %>%
+  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+  dplyr::group_by_all() %>%
+  dplyr::mutate(dup.count = dplyr::n()) %>%
+  dplyr::filter(dup.count > 1)
+
+# max and min number of repeats
+max.dups <- orig.dups %>%
+  dplyr::ungroup() %>%
+  dplyr::select(dup.count) %>%
+  dplyr::distinct() %>%
+  dplyr::slice_max(dup.count) %>%
+  dplyr::pull()
+
+min.dups <- orig.dups %>%
+  dplyr::ungroup() %>%
+  dplyr::select(dup.count) %>%
+  dplyr::distinct() %>%
+  dplyr::slice_min(dup.count) %>%
+  dplyr::pull()
+
+# number of duplicate records
+orig.dups.n <- dim(orig.dups)[1]
+
+
+# number of distinct records
+orig.distinct.n <- dim(orig.df %>%
+                         dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                                       actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+                          dplyr::distinct())[1]
+
+# number of dups removed
+orig.dups.removed <- orig.dups.n - orig.distinct.n
+
 # start by filtering to necessary cols
 filt.df <- orig.df %>%
   dplyr::filter(!is.na(pollutant),
@@ -42,8 +110,13 @@ filt.df <- orig.df %>%
   dplyr::mutate(fiscalYearEstablished = as.numeric(fiscalYearEstablished)) %>%
   dplyr::group_by(actionId, assessmentUnitId, pollutant) %>%
   dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; ")) %>%
-  dplyr::distinct() %>%
-  dplyr::ungroup()
+  dplyr::ungroup() %>%
+  dplyr::select(-addressedParameter) %>%
+  dplyr::distinct()
+
+
+# number of filt.df records
+filt.df.n <- dim(filt.df)[1]
 
 # create df of parameters
 parameters <-filt.df %>%
@@ -139,10 +212,43 @@ update.tmdls <- update.df %>%
 
 rm(update.base, update.dates, update.df, aus, actions)
 
-# create .RData file
+#create data viz for RMD
+# Define the number of records at each step
+raw_data <- orig.n
+dups_removed <- orig.distinct.n
+misskey_removed <- (orig.distinct.n - orig.noauidpoll.n)
+final_clean <- filt.df.n
+
+
+# # Create a flow diagram with scaled box widths
+# viz <- grViz(sprintf("
+# digraph flowchart {
+#   node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]
+#   A [label = 'Raw Data\nRecords: %d', width = %.2f, height = %.2f]
+#   B [label = 'Unique Rows\nRecords: %d', width = %.2f, height = %.2f]
+#   C [label = 'Complete Rows\nRecords: %d', width = %.2f, height = %.2f]
+#   D [label = 'Clean Data \nRecords: %d', width = %.2f, height = %.2f]
+#   
+#   A -> B [label = '   duplicate rows removed']
+#   B -> C [label = '   rows missing pollutant or assesmentUnitIdentifier removed']
+#   C -> D [label = '   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant']
+# }
+# ", raw_data, 8, 4,
+# dups_removed, 8 * dups_removed/raw_data, 4 * dups_removed/raw_data,
+# misskey_removed, 8 * misskey_removed/raw_data, 4 * misskey_removed/raw_data,
+# final_clean, 8 * final_clean/raw_data, 4 * misskey_removed/raw_data))
+# 
+# vtree::grVizToImageFile(viz, width = NULL, height = NULL, format = "png",
+#                  folder = "app/rmds/", "dataclean.png")
+
+# create .RData files
 
 save(filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg,
      pollutants_groups, parameters, max_year, years_list, categories, update.tmdls, 
      file = "EQ_data.RData")
+
+save(update.tmdls, orig.distinct.n, orig.dups.n, orig.dups.removed, orig.n,
+     orig.noauid.n, orig.nopoll.n, orig.noauidpoll.n, max.dups, min.dups, filt.df.n,
+     file = "RMD_data.RData")
 }
 
