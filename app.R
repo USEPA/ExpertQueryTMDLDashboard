@@ -21,6 +21,7 @@ load("EQ_data.RData")
 ui <- tagList(
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
+    tags$html(class = "no-js", lang = "en")
   ),
   shiny::includeHTML("app/header.html"),
   page_sidebar(
