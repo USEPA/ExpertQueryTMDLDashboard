@@ -428,7 +428,8 @@ server <- function(input, output, session) {
       "Data Source: ",
       '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">',
       "Expert Query National Downloads", "</a>", "<br>",
-      "Data Cleaning:", "<br>",
+      "Data Cleaning:", '<a href="', "DataCleaning.html", '" target="_blank">',
+      "Workflow", "</a>", "<br>",
       "Definitions: ",
       '<a href="', "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2", '" target="_blank">',
       "40 C.F.R. 130.2(i)", "</a>"
