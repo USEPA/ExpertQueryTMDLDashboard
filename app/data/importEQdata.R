@@ -109,12 +109,7 @@ filt.df <- orig.df %>%
   dplyr::group_by(actionId, assessmentUnitId, pollutant) %>%
   dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; ")) %>%
   dplyr::ungroup() %>%
-  dplyr::select(-addressedParameter) %>%
   dplyr::distinct()
-
-
-# number of filt.df records
-filt.df.n <- dim(filt.df)[1]
 
 # create df of parameters
 parameters <-filt.df %>%
@@ -190,6 +185,9 @@ filt.df <- filt.df %>%
                 pollutantGroup, addressedParameters, actionId, actionName,
                 assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct()
+
+# number of filt.df records
+filt.df.n <- dim(filt.df)[1]
 
 
 # get update date
