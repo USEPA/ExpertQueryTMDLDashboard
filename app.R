@@ -440,7 +440,13 @@ server <- function(input, output, session) {
   # add user instructions for dashboard
   output$instructions <- renderText({
     HTML(paste0(
-      "This section will contain instructions for using the dashboard."
+      "<ul>",
+      "<li>All filters to refine data included in the summary tables and figures are found on the left side of the dashboard.</li>",
+      "<li>The “Year” filter is a slider input and will include the oldest and most recent years shown above the circle markers.</li>",
+      "<li>The “Region” filter allows multiple selections.</li>",
+      "<li>The “State” filter will show all possible values if no “Region” selections have been made. If one or more “Region” selections are made, the available “State” options will include only the values relevant to the selected Regions.</li>",
+      "<li>Step 5: Download reports as needed.</li>",
+      "</ul>"
     ))
   })
 
