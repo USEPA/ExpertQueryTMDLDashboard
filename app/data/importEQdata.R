@@ -3,8 +3,6 @@ library(dplyr)
 library(jsonlite)
 library(lubridate)
 library(httr2)
-library(vtree)
-library(DiagrammeR)
 
 # check resposne before downloading
 base.url <- "https://cg-7343d0e5-571f-451f-971f-8aaaf971df7e.s3-us-gov-west-1.amazonaws.com/"
