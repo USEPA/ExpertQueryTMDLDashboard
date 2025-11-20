@@ -10,8 +10,8 @@ output:
     fig_width: 8
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(include = FALSE)
+```{r setup, include=TRUE}
+knitr::opts_chunk$set(include = TRUE)
 ```
 
 ```{r eq_data, include=FALSE}

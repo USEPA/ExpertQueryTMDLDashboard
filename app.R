@@ -44,7 +44,7 @@ ui <- tagList(
     title = div(
       br(),
       tags$h1("National Summary of TMDLs in ATTAINS", style = "margin-bottom: 0;"),
-      tags$h3(htmlOutput("update"))
+      tags$h3(htmlOutput("update.tmdls"))
     ),
     # create sidebar for user inputs
     sidebar = sidebar(
@@ -390,7 +390,7 @@ server <- function(input, output, session) {
 
 
   # date update
-  output$update <- renderText({
+  output$update.tmdls <- renderText({
     paste0(" The Expert Query National TMDL Profile was last updated on ", update.tmdls, ".")
   })
 

@@ -11,7 +11,7 @@
 
 <meta name="author" content="ATTAINS Team" />
 
-<meta name="date" content="2025-11-19" />
+<meta name="date" content="2025-11-20" />
 
 <title>Data Import and Cleaning</title>
 
@@ -1586,7 +1586,7 @@ display: none;
 
 <h1 class="title toc-ignore">Data Import and Cleaning</h1>
 <h4 class="author">ATTAINS Team</h4>
-<h4 class="date">2025-11-19</h4>
+<h4 class="date">2025-11-20</h4>
 
 </div>
 
@@ -1599,6 +1599,7 @@ Cleaning</a></li>
 </ul>
 </div>
 
+<pre class="r"><code>knitr::opts_chunk$set(include = TRUE)</code></pre>
 <div id="data-import" class="section level2">
 <h2>Data Import</h2>
 <p>Expert Query are updated on a weekly basis. The data set for this
@@ -1609,6 +1610,32 @@ contains 1,952,817 rows.</p>
 </div>
 <div id="data-cleaning" class="section level2">
 <h2>Data Cleaning</h2>
+<pre class="r"><code># Define the number of records at each step
+raw_data &lt;- orig.n
+dups_removed &lt;- orig.distinct.n
+misskey_removed &lt;- (orig.distinct.n - orig.noauidpoll.n)
+final_clean &lt;- filt.df.n
+
+
+# Create a flow diagram with scaled box widths
+DiagrammeR::grViz(sprintf(&quot;
+digraph flowchart {
+  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]
+  A [label = &#39;Raw Data\nRecords: %d&#39;, width = %.2f, height = %.2f]
+  B [label = &#39;Unique Rows\nRecords: %d&#39;, width = %.2f, height = %.2f]
+  C [label = &#39;Complete Rows\nRecords: %d&#39;, width = %.2f, height = %.2f]
+  D [label = &#39;Clean Data \nRecords: %d&#39;, width = %.2f, height = %.2f]
+  
+  A -&gt; B [label = &#39;   duplicate rows removed&#39;]
+  B -&gt; C [label = &#39;   rows missing pollutant or assesmentUnitIdentifier removed&#39;]
+  C -&gt; D [label = &#39;   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant&#39;]
+}
+&quot;, raw_data, 8, 4,
+dups_removed, 8 * dups_removed/raw_data, 4 * dups_removed/raw_data,
+misskey_removed, 8 * misskey_removed/raw_data, 4 * misskey_removed/raw_data,
+final_clean, 8 * final_clean/raw_data, 4 * misskey_removed/raw_data))</code></pre>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-4d6c99a86cbe86d951a7" style="width:768px;height:768px;"></div>
+<script type="application/json" data-for="htmlwidget-4d6c99a86cbe86d951a7">{"x":{"diagram":"\ndigraph flowchart {\n  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]\n  A [label = \"Raw Data\nRecords: 1952817\", width = 8.00, height = 4.00]\n  B [label = \"Unique Rows\nRecords: 510346\", width = 2.09, height = 1.05]\n  C [label = \"Complete Rows\nRecords: 464834\", width = 1.90, height = 0.95]\n  D [label = \"Clean Data \nRecords: 226774\", width = 0.93, height = 0.95]\n  \n  A -> B [label = \"   duplicate rows removed\"]\n  B -> C [label = \"   rows missing pollutant or assesmentUnitIdentifier removed\"]\n  C -> D [label = \"   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant\"]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>The following columns are retained from the Expert Query TMDL data
 set for analysis: region, state, fiscalYearEstablished, pollutant,
 pollutantGroup, addressedParameter, actionId, actionName,
