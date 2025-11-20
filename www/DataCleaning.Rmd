@@ -1,0 +1,73 @@
+---
+title: "Data Import and Cleaning"
+author: "ATTAINS Team"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    fig_caption: yes
+    fig_height: 8
+    fig_width: 8
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
+```
+
+```{r eq_data, include=FALSE}
+load("RMD_data.RData")
+
+
+library(dplyr)
+library(DiagrammeR)
+library(htmlwidgets)
+```
+
+## Data Import
+
+Expert Query are updated on a weekly basis. The data set for this dashboard is refreshed weekly to ensure that the most recent TMDL data are displayed. The Expert Query data set currently used by the dashboard is from the Expert Query refresh on `r update.tmdls`. It contains `r format(orig.n, big.mark = ",", scientific = FALSE)` rows.
+
+## Data Cleaning
+
+```{r data_clean, include =TRUE, echo=FALSE, fig.align='center', fig.height=5}
+# Define the number of records at each step
+raw_data <- orig.n
+dups_removed <- orig.distinct.n
+misskey_removed <-  (orig.distinct.n - orig.noauidpoll.n)  
+final_clean <- filt.df.n
+
+# format the number of records for labels
+raw_data_label <- format(raw_data, big.mark = ",", scientific = FALSE)
+dups_removed_label <- format(dups_removed, big.mark = ",", scientific = FALSE)
+misskey_removed_label <- format(misskey_removed, big.mark = ",", scientific = FALSE)
+final_clean_label <- format(final_clean, big.mark = ",", scientific = FALSE)
+
+# Create a flow diagram with scaled box widths
+DiagrammeR::grViz(sprintf("
+digraph flowchart {
+  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]
+  A [label = 'Raw Data\nRecords: %s', width = %.2f, height = %.2f]
+  B [label = 'Unique Rows\nRecords: %s', width = %.2f, height = %.2f]
+  C [label = 'Complete Rows\nRecords: %s', width = %.2f, height = %.2f]
+  D [label = 'Clean Data \nRecords: %s', width = %.2f, height = %.2f]
+  
+  A -> B [label = '   duplicate rows removed']
+  B -> C [label = '   rows missing pollutant or assesmentUnitIdentifier removed']
+  C -> D [label = '   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant']
+}
+", raw_data_label, 8, 4,
+dups_removed_label, 8 * dups_removed/raw_data, 4 * dups_removed/raw_data,
+misskey_removed_label, 8 * misskey_removed/raw_data, 4 * misskey_removed/raw_data,
+final_clean_label, 8 * final_clean/raw_data, 4 * misskey_removed/raw_data))
+
+```
+
+The following columns were retained from the Expert Query TMDL data set for analysis: region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter, actionId, actionName, assessmentUnitId, assessmentUnitName, and planSummaryLink. Once these columns were selected, any duplicate columns were removed. `r format(orig.dups.n, big.mark = ",", scientific = FALSE)` duplicate records were found, leading to the removal of `r format(orig.dups.removed, big.mark = ",", scientific = FALSE)` rows as the number of repeats per unique record ranged from `r format(min.dups, big.mark = ",", scientific = FALSE)` to `r format(max.dups, big.mark = ",", scientific = FALSE)`.
+
+Any records missing pollutant or assessmentUnitId were also removed. There were `r format(orig.nopoll.n, big.mark = ",", scientific = FALSE)` rows missing pollutant and `r format(orig.noauid.n, big.mark = ",", scientific = FALSE)` rows missing assessment unit identifier. Some rows were missing both.
+
+Finally, the data set was grouped by unique combination of actionId, assessmentUnitId, and pollutant and a new column, addressedParameters, was created to list all applicable addressedParameter values in one column. This yielded a data set with `r format(filt.df.n, big.mark = ",", scientific = FALSE)` rows with each row representing a unique combination of assessmentUnitIdentifier, pollutant, and actionId. This clean data set is behind all of the data summaries and visualizations in the dashboard.
+
+## Questions?
+
+For questions about the data cleaning process or Expert Query in general, please contact the ATTAINS team at [ATTAINS\@epa.gov](mailto:ATTAINS@epa.gov){.email}.

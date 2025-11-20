@@ -30,6 +30,72 @@ if(check.api != 200) {
 if(check.api == 200) {
 orig.df <- rExpertQuery::EQ_NationalExtract("tmdl")
 
+# number of original records
+orig.n <- dim(orig.df)[1]
+
+# number of records with no pollutant
+orig.nopoll.n <- dim(orig.df %>%
+  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+    dplyr::distinct() %>%
+  dplyr::filter(is.na(pollutant) |
+                pollutant == ""))[1]
+
+# number of records with no assessment unit id
+orig.noauid.n <- dim(orig.df %>%
+                       dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                                     actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+                       dplyr::distinct() %>%
+                       dplyr::filter(is.na(assessmentUnitId) |
+                                       assessmentUnitId == ""))[1]
+
+# number of records with no assessment unit id or pollutant
+orig.noauidpoll.n <- dim(orig.df %>%
+                       dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                                     actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+                       dplyr::distinct() %>%
+                       dplyr::filter(is.na(assessmentUnitId) |
+                                       assessmentUnitId == ""|
+                                     is.na(pollutant) |
+                                       pollutant == ""))[1]
+
+# number of duplicate records
+# dups only df
+orig.dups <- orig.df %>%
+  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+  dplyr::group_by_all() %>%
+  dplyr::mutate(dup.count = dplyr::n()) %>%
+  dplyr::filter(dup.count > 1)
+
+# max and min number of repeats
+max.dups <- orig.dups %>%
+  dplyr::ungroup() %>%
+  dplyr::select(dup.count) %>%
+  dplyr::distinct() %>%
+  dplyr::slice_max(dup.count) %>%
+  dplyr::pull()
+
+min.dups <- orig.dups %>%
+  dplyr::ungroup() %>%
+  dplyr::select(dup.count) %>%
+  dplyr::distinct() %>%
+  dplyr::slice_min(dup.count) %>%
+  dplyr::pull()
+
+# number of duplicate records
+orig.dups.n <- dim(orig.dups)[1]
+
+
+# number of distinct records
+orig.distinct.n <- dim(orig.df %>%
+                         dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                                       actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
+                          dplyr::distinct())[1]
+
+# number of dups removed
+orig.dups.removed <- orig.dups.n - orig.distinct.n
+
 # start by filtering to necessary cols
 filt.df <- orig.df %>%
   dplyr::filter(!is.na(pollutant),
@@ -42,8 +108,8 @@ filt.df <- orig.df %>%
   dplyr::mutate(fiscalYearEstablished = as.numeric(fiscalYearEstablished)) %>%
   dplyr::group_by(actionId, assessmentUnitId, pollutant) %>%
   dplyr::mutate(addressedParameters = paste(sort(unique(addressedParameter)), collapse = "; ")) %>%
-  dplyr::distinct() %>%
-  dplyr::ungroup()
+  dplyr::ungroup() %>%
+  dplyr::distinct()
 
 # create df of parameters
 parameters <-filt.df %>%
@@ -120,6 +186,9 @@ filt.df <- filt.df %>%
                 assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct()
 
+# number of filt.df records
+filt.df.n <- dim(filt.df)[1]
+
 
 # get update date
 
@@ -139,10 +208,14 @@ update.tmdls <- update.df %>%
 
 rm(update.base, update.dates, update.df, aus, actions)
 
-# create .RData file
+# create .RData files
 
 save(filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg,
      pollutants_groups, parameters, max_year, years_list, categories, update.tmdls, 
      file = "EQ_data.RData")
+
+save(update.tmdls, orig.distinct.n, orig.dups.n, orig.dups.removed, orig.n,
+     orig.noauid.n, orig.nopoll.n, orig.noauidpoll.n, max.dups, min.dups, filt.df.n,
+     file = "RMD_data.RData")
 }
 
