@@ -447,10 +447,15 @@ server <- function(input, output, session) {
       "<li>The “State” filter will show all possible values if no “Region” selections have been made. If one or more “Region” selections are made, the available “State” options will include only the values relevant to the selected Regions.</li>",
       "<li>The “Pollutant Group” filter allows multiple selections.</li>",
       "<li>The “Pollutant” filter will show all possible values if no “Pollutant Group” selections have been made. If one or more “Pollutant Group” selections are made, the available “Pollutant” options will include only the values relevant to the selected Pollutant Groups.</li>",
+      "<li>The “Addressed Parameter” filter allows multiple selections. If no “Pollutant Group” or “Pollutant” selections have been made, all “Addressed Parameter” values are shown. If “Pollutant Group” or “Pollutant” selections have been made, only “Addressed Parameters” associated with the chosen Pollutant Groups or Pollutants are shown.</li>",
+      "<li>Other than the previously described relationships between Region/State, Pollutant Group/Pollutant, and Pollutant Group/Pollutant/Addressed Parameter, all filters function as “AND” operators. For example, filtering for “Region: 5”, “State: MN”, “Pollutant Group: AMMONIA”, and “Year: 1980-2000” would only return results that matched all of those filters.</li>",
+      "<li>After all selections are made, the user needs to click the “Update” button to ensure all filters are applied. If any modifications to the filters are made, the user will need to click “Update” again to apply them.</li>",
+      "<li>To remove all filters and start over, the user should click the “Clear” button shown below all the other filter options.</li>",
+      "<li>Contact the ATTAINS Team at <a href='mailto:ATTAINS@epa.gov' target='_blank'>ATTAINS@epa.gov</a> with any questions or bug reports.</li>",
       "</ul>"
     ))
   })
-
+  
   # create download button for filtered tmdl results tab
   output$download_df <- downloadHandler(
     filename = function() {
