@@ -10,8 +10,8 @@ output:
     fig_width: 8
 ---
 
-```{r setup, include=TRUE}
-knitr::opts_chunk$set(include = TRUE)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(include = FALSE)
 ```
 
 ```{r eq_data, include=FALSE}
@@ -29,13 +29,18 @@ Expert Query are updated on a weekly basis. The data set for this dashboard is r
 
 ## Data Cleaning
 
-```{r data_clean, echo=FALSE}
+```{r data_clean, include =TRUE, echo=FALSE, fig.align='center', fig.height=5}
 # Define the number of records at each step
 raw_data <- orig.n
 dups_removed <- orig.distinct.n
-misskey_removed <- (orig.distinct.n - orig.noauidpoll.n)
+misskey_removed <-  (orig.distinct.n - orig.noauidpoll.n)  
 final_clean <- filt.df.n
 
+# format the number of records for labels
+raw_data_label <- formatC(raw_data, big.mark = ",")
+dups_removed_label <- formatC(dups_removed, big.mark = ",")
+misskey_removed_label <- formatC(misskey_removed, big.mark = ",")
+final_clean_label <- formatC(final_clean, big.mark = ",")
 
 # Create a flow diagram with scaled box widths
 DiagrammeR::grViz(sprintf("
@@ -50,10 +55,10 @@ digraph flowchart {
   B -> C [label = '   rows missing pollutant or assesmentUnitIdentifier removed']
   C -> D [label = '   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant']
 }
-", raw_data, 8, 4,
-dups_removed, 8 * dups_removed/raw_data, 4 * dups_removed/raw_data,
-misskey_removed, 8 * misskey_removed/raw_data, 4 * misskey_removed/raw_data,
-final_clean, 8 * final_clean/raw_data, 4 * misskey_removed/raw_data))
+", raw_data_label, 8, 4,
+dups_removed_label, 8 * dups_removed/raw_data, 4 * dups_removed/raw_data,
+misskey_removed_label, 8 * misskey_removed/raw_data, 4 * misskey_removed/raw_data,
+final_clean_label, 8 * final_clean/raw_data, 4 * misskey_removed/raw_data))
 
 ```
 
