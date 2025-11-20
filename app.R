@@ -15,7 +15,7 @@ library(bsicons)
 # addressed parameters available to search should filter based on pollutant/pollutant group
 # add download all button (to download all tables/plots in one zip file)
 
-load("EQ_data.RData")
+load("app/data/EQ_data.RData")
 
 # UI
 ui <- tagList(
