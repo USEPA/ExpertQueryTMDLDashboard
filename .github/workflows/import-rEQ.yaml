@@ -3,7 +3,7 @@ name: import data
 on:
   push:
   schedule:
-    - cron: '15 06 * * 3' # This runs at 06:15 AM, only on Wednesday
+    - cron: '15 06 * * 0' # This runs at 06:15 AM, only on Sunday
 permissions: write-all
 
 jobs:
