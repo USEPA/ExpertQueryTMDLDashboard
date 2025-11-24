@@ -8,11 +8,7 @@ library(scales)
 library(shinythemes)
 library(bsicons)
 
-# Bug fixes/To do list:
-# fix top banner so that gray section collapses when not selected
-#   expand Y axis to 250 k for TMDL Production History
-# pollutant/pollutant group filter is not working (pollutant list should be filtered based on selected pollutant group)
-# addressed parameters available to search should filter based on pollutant/pollutant group
+# Bug fixes/To do list (HRM 11/24/25):
 # add download all button (to download all tables/plots in one zip file)
 
 load("app/data/EQ_data.RData")
@@ -428,7 +424,7 @@ server <- function(input, output, session) {
       "Data Source: ",
       '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">',
       "Expert Query National Downloads", "</a>", "<br>",
-      "Data Cleaning:", '<a href="', "DataCleaning.html", '" target="_blank">',
+      "Data Cleaning: ", '<a href="', "DataCleaning.html", '" target="_blank">',
       "Workflow", "</a>", "<br>",
       "Definitions: ",
       '<a href="', "https://www.ecfr.gov/current/title-40/chapter-I/subchapter-D/part-130/section-130.2", '" target="_blank">',
