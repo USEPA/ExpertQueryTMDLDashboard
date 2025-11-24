@@ -380,7 +380,8 @@ server <- function(input, output, session) {
         dplyr::distinct(),
       filter = "top",
       escape = FALSE,
-      extensions = "FixedHeader"
+      extensions = "FixedHeader",
+      rownames = FALSE
     )
   })
 
@@ -535,7 +536,8 @@ server <- function(input, output, session) {
     }
 
     datatable(pie.df,
-      escape = FALSE
+      escape = FALSE,
+      rownames = FALSE
     )
   })
 
@@ -631,7 +633,8 @@ server <- function(input, output, session) {
   output$annualtable <- renderDT({
     datatable(
       data = annual_data(),
-      escape = FALSE
+      escape = FALSE,
+      rownames = FALSE
     )
   })
 
@@ -659,7 +662,8 @@ server <- function(input, output, session) {
   # create production history data table
   output$prodhist <- renderDT({
     datatable(prod_data(),
-      escape = FALSE
+      escape = FALSE,
+      rownames = FALSE
     )
   })
 
@@ -696,7 +700,8 @@ server <- function(input, output, session) {
           "TMDL Count" = n,
           "State" = state
         ),
-      escape = FALSE
+      escape = FALSE,
+      rownames = FALSE
     )
   })
   
