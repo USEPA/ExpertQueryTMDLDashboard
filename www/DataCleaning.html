@@ -11,7 +11,7 @@
 
 <meta name="author" content="ATTAINS Team" />
 
-<meta name="date" content="2025-12-07" />
+<meta name="date" content="2025-12-09" />
 
 <title>Data Import and Cleaning</title>
 
@@ -1586,7 +1586,7 @@ display: none;
 
 <h1 class="title toc-ignore">Data Import and Cleaning</h1>
 <h4 class="author">ATTAINS Team</h4>
-<h4 class="date">2025-12-07</h4>
+<h4 class="date">2025-12-09</h4>
 
 </div>
 
@@ -1604,13 +1604,13 @@ Cleaning</a></li>
 <p>Expert Query are updated on a weekly basis. The data set for this
 dashboard is refreshed weekly to ensure that the most recent TMDL data
 are displayed. The Expert Query data set currently used by the dashboard
-is from the Expert Query refresh on November 20, 2025 at 07:00 EST. It
+is from the Expert Query refresh on December 05, 2025 at 07:00 EST. It
 contains 1,952,817 rows.</p>
 </div>
 <div id="data-cleaning" class="section level2">
 <h2>Data Cleaning</h2>
-<div class="grViz html-widget html-fill-item" id="htmlwidget-c03c5a9fdc9d87f782c9" style="width:768px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-c03c5a9fdc9d87f782c9">{"x":{"diagram":"\ndigraph flowchart {\n  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]\n  A [label = \"Raw Data\nRecords: 1,952,817\", width = 8.00, height = 4.00]\n  B [label = \"Unique Rows\nRecords: 510,346\", width = 2.09, height = 1.05]\n  C [label = \"Complete Rows\nRecords: 464,834\", width = 1.90, height = 0.95]\n  D [label = \"Clean Data \nRecords: 226,774\", width = 0.93, height = 0.95]\n  \n  A -> B [label = \"   duplicate rows removed\"]\n  B -> C [label = \"   rows missing pollutant or assesmentUnitIdentifier removed\"]\n  C -> D [label = \"   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant\"]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-445e75fe76fe52d67b81" style="width:768px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-445e75fe76fe52d67b81">{"x":{"diagram":"\ndigraph flowchart {\n  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]\n  A [label = \"Raw Data\nRecords: 1,952,817\", width = 8.00, height = 4.00]\n  B [label = \"Unique Rows\nRecords: 510,346\", width = 2.09, height = 1.05]\n  C [label = \"Complete Rows\nRecords: 464,834\", width = 1.90, height = 0.95]\n  D [label = \"Clean Data \nRecords: 226,774\", width = 0.93, height = 0.95]\n  \n  A -> B [label = \"   duplicate rows removed\"]\n  B -> C [label = \"   rows missing pollutant or assesmentUnitIdentifier removed\"]\n  C -> D [label = \"   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant\"]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>The following columns were retained from the Expert Query TMDL data
 set for analysis: region, state, fiscalYearEstablished, pollutant,
 pollutantGroup, addressedParameter, actionId, actionName,
