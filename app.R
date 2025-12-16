@@ -88,7 +88,7 @@ ui <- tagList(
           inputId = "filt_select",
           label = "Select TMDL Count Method:",
           choices = c(
-            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df"
           ),
           selected = "reactive_df",
           width = "100%"
@@ -103,7 +103,7 @@ ui <- tagList(
           inputId = "prod_select",
           label = "Select TMDL Count Method:",
           choices = c(
-            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df"
           ),
           selected = "reactive_df",
           width = "100%"
@@ -131,7 +131,7 @@ ui <- tagList(
           inputId = "annual_select",
           label = "Select TMDL Count Method:",
           choices = c(
-            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df"
+            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df"
           ),
           selected = "reactive_df",
           width = "100%"
@@ -159,8 +159,8 @@ ui <- tagList(
           inputId = "poll_radio",
           label = "Select TMDL Count Method:",
           choices = c(
-            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
-            "By Unique Pollution/Assessment Unit" = "wb_df"
+            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df",
+            "By Unique Pollutant/Assessment Unit" = "wb_df"
           ),
           selected = "reactive_df",
           width = "100%"
@@ -188,8 +188,8 @@ ui <- tagList(
           inputId = "state_select",
           label = "Select TMDL Count Method:",
           choices = c(
-            "By Unique Pollution/Assessment Unit/Action ID" = "reactive_df",
-            "By Unique Pollution/Assessment Unit" = "wb_df"
+            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df",
+            "By Unique Pollutant/Assessment Unit" = "wb_df"
           ),
           selected = "reactive_df",
           width = "100%"
