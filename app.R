@@ -406,9 +406,9 @@ server <- function(input, output, session) {
     paste0(
       "In this filtered data set there are : ", "<br>", "<br>",
       "<b>", count, "</b>",
-      "  unique combinations of actionId, assessmentUnitId and pollutant", "<br>",
+      "  unique combinations of actionId, assessmentUnitId and pollutant (revisions are counted as new TMDLs)", "<br>",
       "<b>", count2, "</b>",
-      " unique combinations of assessmentUnitId and pollutant", "<br>", "<br>",
+      " unique combinations of assessmentUnitId and pollutant (revisions are not counted as new TMDLs)", "<br>", "<br>",
       "All of the other tabs in this dashboard count TMDLs as unique combinations of ",
       "actionId, assessmentUnitId and pollutant"
     )
