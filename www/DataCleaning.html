@@ -1592,6 +1592,7 @@ display: none;
 
 <div id="TOC">
 <ul>
+<li><a href="#data-source" id="toc-data-source">Data Source</a></li>
 <li><a href="#data-import" id="toc-data-import">Data Import</a></li>
 <li><a href="#data-cleaning" id="toc-data-cleaning">Data
 Cleaning</a></li>
@@ -1599,6 +1600,31 @@ Cleaning</a></li>
 </ul>
 </div>
 
+<div id="data-source" class="section level2">
+<h2>Data Source</h2>
+<p>The data used in this dashboard are reported to EPA by states,
+tribes, and territories in ATTAINS. This is public information, which is
+available through Expert Query web services, ATTAINS web services and
+ATTAINS geospatial services. Expert Query web services are used to
+access and update ATTAINS data for TMDL Dashboard. It is crucial to be
+aware of certain complexities inherent in the data. Some of these
+complexities arise from multiple tables that have many-to-many
+relationships, resulting in what may appear to be duplicates when
+looking at a subset of data columns. Other complexities arise from
+incomplete legacy data that were imported into the current ATTAINS
+database.</p>
+<p>This tool handles these complexities by employing a thorough data
+cleaning process (described in detail below) which removes exact
+duplicates, removes incomplete records, and condenses the original data
+set to one row per unique combination of assessment unit identifier,
+pollutant, and action identifier. This prevents double counting in
+situations where the same assessment unit identifier/pollutant/action
+identifier may be associated with more than one use or addressed
+parameter.</p>
+<p>Additionally, users are cautioned against direct comparisons between
+states due to differences in data entry, TMDL development, and
+assessment methodologies.</p>
+</div>
 <div id="data-import" class="section level2">
 <h2>Data Import</h2>
 <p>Expert Query are updated on a weekly basis. The data set for this
@@ -1609,8 +1635,8 @@ contains 1,951,819 rows.</p>
 </div>
 <div id="data-cleaning" class="section level2">
 <h2>Data Cleaning</h2>
-<div class="grViz html-widget html-fill-item" id="htmlwidget-8e772329fccc5279b641" style="width:768px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-8e772329fccc5279b641">{"x":{"diagram":"\ndigraph flowchart {\n  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]\n  A [label = \"Raw Data\nRecords: 1,951,819\", width = 8.00, height = 4.00]\n  B [label = \"Unique Rows\nRecords: 509,546\", width = 2.09, height = 1.04]\n  C [label = \"Complete Rows\nRecords: 464,230\", width = 1.90, height = 0.95]\n  D [label = \"Clean Data \nRecords: 226,401\", width = 0.93, height = 0.95]\n  \n  A -> B [label = \"   duplicate rows removed\"]\n  B -> C [label = \"   rows missing pollutant or assesmentUnitIdentifier removed\"]\n  C -> D [label = \"   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant\"]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-c8b7fc2333aa7bc533ff" style="width:768px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-c8b7fc2333aa7bc533ff">{"x":{"diagram":"\ndigraph flowchart {\n  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]\n  A [label = \"Raw Data\nRecords: 1,951,819\", width = 8.00, height = 4.00]\n  B [label = \"Unique Rows\nRecords: 509,546\", width = 2.09, height = 1.04]\n  C [label = \"Complete Rows\nRecords: 464,230\", width = 1.90, height = 0.95]\n  D [label = \"Clean Data \nRecords: 226,401\", width = 0.93, height = 0.95]\n  \n  A -> B [label = \"   duplicate rows removed\"]\n  B -> C [label = \"   rows missing pollutant or assesmentUnitIdentifier removed\"]\n  C -> D [label = \"   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant\"]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>The following columns were retained from the Expert Query TMDL data
 set for analysis: region, state, fiscalYearEstablished, pollutant,
 pollutantGroup, addressedParameter, actionId, actionName,
