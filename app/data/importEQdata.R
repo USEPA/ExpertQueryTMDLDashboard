@@ -187,7 +187,7 @@ aus <- filt.df %>%
 
 # reorder filt df for use in app
 filt.df <- filt.df %>%
-  dplyr::select(region, state, fiscalYearEstablished, pollutant,
+  dplyr::select(region, state, actionAgency, fiscalYearEstablished, pollutant,
                 pollutantGroup, addressedParameters, actionId, actionName,
                 assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct()
