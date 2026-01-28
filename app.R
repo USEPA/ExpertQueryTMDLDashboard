@@ -395,7 +395,7 @@ server <- function(input, output, session) {
 
   # date update
   output$update.tmdls <- renderText({
-    paste0(" The Expert Query National TMDL Profile was last updated on ", update.tmdls, ".")
+    paste0(" Data last updated on ", update.tmdls, ".")
   })
 
   # tmdls version one
@@ -429,6 +429,9 @@ server <- function(input, output, session) {
       "Total Maximum Daily Loads (TMDLs) for impaired waters. A TMDL is the sum of the ",
       "individual Wasteload allocations (WLAs) for point sources , load allocations (LAs) for ",
       "non-point sources and natural background.",
+      "<br>", "<br>",
+      "It is crucial to be aware of data complexities due to database structure or legacy data that were imported into the current ATTAINS database. ", 
+      "Users are cautioned against direct comparisons between states due to differences in data entry, TMDL development, and assessment methodologies.",
       "<br>", "<br>",
       "Data Source: ",
       '<a href="', "https://owapps.epa.gov/expertquery/national-downloads", '" target="_blank">',
