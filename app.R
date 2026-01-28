@@ -50,6 +50,7 @@ ui <- tagList(
       selectInput("pollgroup", "Pollutant Group:", choices = sort(unique(pollutants_groups$pollutantGroup)), selected = NULL, multiple = TRUE),
       selectInput("pollutant", "Pollutant:", choices = sort(unique(pollutants_groups$pollutant)), selected = NULL, multiple = TRUE),
       selectInput("addparam", "Addressed Parameter:", choices = sort(unique(parameters$addressedParameter)), selected = NULL, multiple = TRUE),
+      selectInput("actagency", "Action Agency:", choices = sort(unique(act_agencies)), selected = NULL, multiple = TRUE),
       actionButton("update", "Update"),
       actionButton("clear", "Clear")
     ),
@@ -317,6 +318,10 @@ server <- function(input, output, session) {
 
       temp_df <- temp_df[temp_df$addressedParameters %in% params$addressedParameters, ]
     }
+    
+    if (!is.null(input$actagency) && length(input$actagency) > 0) {
+      temp_df <- temp_df[temp_df$actionAgency %in% input$actagency, ]
+    }
 
 
     reactive_df(temp_df)
@@ -338,6 +343,8 @@ server <- function(input, output, session) {
     updateSelectInput(session, "pollgroup", selected = "")
 
     updateSelectInput(session, "pollutant", selected = "")
+    
+    updateSelectInput(session, "actagency", selected = "")
   })
 
   # create reactive df to count waterbody and pollutant combinations

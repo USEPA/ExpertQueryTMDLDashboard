@@ -35,7 +35,7 @@ orig.n <- dim(orig.df)[1]
 
 # number of records with no pollutant
 orig.nopoll.n <- dim(orig.df %>%
-  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+  dplyr::select(region, state, actionAgency, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                 actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
     dplyr::distinct() %>%
   dplyr::filter(is.na(pollutant) |
@@ -43,7 +43,7 @@ orig.nopoll.n <- dim(orig.df %>%
 
 # number of records with no assessment unit id
 orig.noauid.n <- dim(orig.df %>%
-                       dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                       dplyr::select(region, state, actionAgency, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                                      actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
                        dplyr::distinct() %>%
                        dplyr::filter(is.na(assessmentUnitId) |
@@ -51,7 +51,7 @@ orig.noauid.n <- dim(orig.df %>%
 
 # number of records with no assessment unit id or pollutant
 orig.noauidpoll.n <- dim(orig.df %>%
-                       dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                       dplyr::select(region, state, actionAgency, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                                      actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
                        dplyr::distinct() %>%
                        dplyr::filter(is.na(assessmentUnitId) |
@@ -62,7 +62,7 @@ orig.noauidpoll.n <- dim(orig.df %>%
 # number of duplicate records
 # dups only df
 orig.dups <- orig.df %>%
-  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+  dplyr::select(region, state, actionAgency, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                 actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::group_by_all() %>%
   dplyr::mutate(dup.count = dplyr::n()) %>%
@@ -89,7 +89,7 @@ orig.dups.n <- dim(orig.dups)[1]
 
 # number of distinct records
 orig.distinct.n <- dim(orig.df %>%
-                         dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+                         dplyr::select(region, state, actionAgency, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                                        actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
                           dplyr::distinct())[1]
 
@@ -102,7 +102,7 @@ filt.df <- orig.df %>%
                 pollutant != "",
                 !is.na(assessmentUnitId),
                 assessmentUnitId != "") %>%
-  dplyr::select(region, state, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
+  dplyr::select(region, state, actionAgency, fiscalYearEstablished, pollutant, pollutantGroup, addressedParameter,  
                 actionId, actionName, assessmentUnitId, assessmentUnitName, planSummaryLink) %>%
   dplyr::distinct() %>%
   dplyr::mutate(fiscalYearEstablished = as.numeric(fiscalYearEstablished)) %>%
@@ -174,6 +174,12 @@ actions <- filt.df %>%
   dplyr::select(actionName, state, region) %>%
   dplyr::distinct()
 
+# create list of actionAgency values
+act_agencies <- filt.df %>%
+  dplyr::select(actionAgency) %>%
+  dplyr::distinct() %>%
+  dplyr::pull()
+
 # create df of assessment unit names by state and region
 aus <- filt.df %>%
   dplyr::select(assessmentUnitName, state, region) %>%
@@ -211,7 +217,8 @@ rm(update.base, update.dates, update.df, aus, actions)
 # create .RData files
 
 save(filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg,
-     pollutants_groups, parameters, max_year, years_list, categories, update.tmdls, 
+     pollutants_groups, parameters, max_year, years_list, categories, update.tmdls,
+     act_agencies,
      file = "app/data/EQ_data.RData")
 
 save(update.tmdls, orig.distinct.n, orig.dups.n, orig.dups.removed, orig.n,
