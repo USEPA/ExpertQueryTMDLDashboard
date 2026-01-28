@@ -160,10 +160,10 @@ ui <- tagList(
           inputId = "poll_radio",
           label = "Select TMDL Count Method:",
           choices = c(
-            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df",
-            "By Unique Pollutant/Assessment Unit" = "wb_df"
+            "By Unique Pollutant/Assessment Unit" = "wb_df",
+            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df"
           ),
-          selected = "reactive_df",
+          selected = "wb_df",
           width = "100%"
         ),
         # add pie graph panel
@@ -189,10 +189,10 @@ ui <- tagList(
           inputId = "state_select",
           label = "Select TMDL Count Method:",
           choices = c(
-            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df",
-            "By Unique Pollutant/Assessment Unit" = "wb_df"
+            "By Unique Pollutant/Assessment Unit" = "wb_df",
+            "By Unique Pollutant/Assessment Unit/Action ID" = "reactive_df"
           ),
-          selected = "reactive_df",
+          selected = "wb_df",
           width = "100%"
         ),
         # add bar graph panel
@@ -412,12 +412,13 @@ server <- function(input, output, session) {
 
     paste0(
       "In this filtered data set there are : ", "<br>", "<br>",
-      "<b>", count, "</b>",
-      "  unique combinations of actionId, assessmentUnitId and pollutant (revisions are counted as new TMDLs)", "<br>",
       "<b>", count2, "</b>",
-      " unique combinations of assessmentUnitId and pollutant (revisions are not counted as new TMDLs)", "<br>", "<br>",
-      "All of the other tabs in this dashboard count TMDLs as unique combinations of ",
-      "actionId, assessmentUnitId and pollutant"
+      " unique combinations of assessmentUnitId and pollutant (revisions are not counted as separate TMDLs)", "<br>", "<br>",
+      "<b>", count, "</b>",
+      "  unique combinations of actionId, assessmentUnitId and pollutant (revisions may be counted as separate TMDLs)", "<br>",
+      "<br>", "<br>",
+      "Use radio buttons at the top of each tab to select the count method. ",
+      "Some figures can only be displayed using the actionId/assessmentUnitId/pollutant because a single fiscalYearEstablished is required to plot the TMDL."
     )
   })
 
@@ -454,6 +455,7 @@ server <- function(input, output, session) {
       "<li>The “Pollutant Group” filter allows multiple selections.</li>",
       "<li>The “Pollutant” filter will show all possible values if no “Pollutant Group” selections have been made (over 1,000 options). If one or more “Pollutant Group” selections are made, the available “Pollutant” options will include only the values relevant to the selected Pollutant Groups.</li>",
       "<li>The “Addressed Parameter” filter allows multiple selections. If no “Pollutant Group” or “Pollutant” selections have been made, all “Addressed Parameter” values are shown. If “Pollutant Group” or “Pollutant” selections have been made, only “Addressed Parameters” associated with the chosen Pollutant Groups or Pollutants are shown.</li>",
+      "<li>The “Action Agency” filter allows multiple selections. If no selection(s) have been made, results from all actionAgency values are shown.</li>",
       "<li>Other than the previously described relationships between Region/State, Pollutant Group/Pollutant, and Pollutant Group/Pollutant/Addressed Parameter, all filters function as “AND” operators. For example, filtering for “Region: 5”, “State: MN”, “Pollutant Group: AMMONIA”, and “Year: 1980-2000” would only return results that matched all of those filters.</li>",
       "<li>After all selections are made, the user needs to click the “Update” button to ensure all filters are applied. If any modifications to the filters are made, the user will need to click “Update” again to apply them.</li>",
       "<li>To remove all filters and start over, the user should click the “Clear” button shown below all the other filter options.</li>",
@@ -466,7 +468,7 @@ server <- function(input, output, session) {
       "<br>",
       "<b>Questions:</b>",
       "<br>",
-      "<li>Contact the ATTAINS Team at <a href='mailto:ATTAINS@epa.gov' target='_blank'>ATTAINS@epa.gov</a> with any questions or bug reports.</li>",
+      "<li>Contact the ATTAINS Team at <a href='mailto:ATTAINS@epa.gov' target='_blank'>ATTAINS@epa.gov</a> with any questions, issues or suggestions.</li>",
       "</ul>"
     ))
   })
