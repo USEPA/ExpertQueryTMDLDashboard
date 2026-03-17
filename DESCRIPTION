@@ -31,6 +31,3 @@ Imports:
   shinythemes
 Remotes:
   USEPA/rExpertQuery@develop
-  
-library(DiagrammeR)
-library(htmlwidgets)
