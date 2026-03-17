@@ -20,7 +20,7 @@ if(!"remotes"%in%installed.packages()){
 install.packages("remotes")
 }
 
-remotes::install_github("USEPA/ExpertQueryTMDLDashboard", ref = "develop", dependencies = TRUE, force = TRUE)
+remotes::install_github("USEPA/TMDLDash", ref = "develop", dependencies = TRUE, force = TRUE)
 ```
 
 ## Open-Source Code Policy
