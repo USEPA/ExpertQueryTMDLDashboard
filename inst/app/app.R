@@ -1,7 +1,20 @@
+library(shiny)
+library(shinyjs)
+library(DT)
+library(ggplot2)
+library(plotly)
+library(bslib)
+library(scales)
+library(shinythemes)
+library(bsicons)
+
 # Bug fixes/To do list (HRM 11/24/25):
 # add download all button (to download all tables/plots in one zip file)
 
-load("inst/app/data/EQ_data.RData")
+app_dir <- getOption("TMDLDash.app_dir", default = system.file("app", package = "TMDLDash"))
+eq_path <- file.path(app_dir, "data", "EQ_data.RData")
+stopifnot(file.exists(eq_path))
+load(eq_path)
 
 # UI
 ui <- tagList(
@@ -9,7 +22,7 @@ ui <- tagList(
     tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
     tags$html(class = "no-js", lang = "en")
   ),
-  shiny::includeHTML("app/header.html"),
+  shiny::includeHTML(file.path(app_dir, "header.html")),
   page_sidebar(
     # url options
     tags$head(
@@ -203,7 +216,7 @@ ui <- tagList(
       )
     )
   ),
-  shiny::includeHTML("app/footer.html")
+  shiny::includeHTML(file.path(app_dir, "footer.html"))
 )
 
 

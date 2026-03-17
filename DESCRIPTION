@@ -9,25 +9,28 @@ Description: The Expert Query TMDL Dashboard is an R Shiny application
     ATTAINS are downloaded via Expert Query web services and are refreshed
     weekly.
 License: CC0 + file LICENSE
-Encoding: UTF-8
-Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports:
-  bsicons,
-  bslib,
-  DiagrammeR,
-  dplyr (>= 1.1.0),
-  DT,
-  ggplot2,
-  htmlwidgets,
-  httr2,
-  jsonlite,
-  lubridate (>= 1.5.0),
-  plotly,
-  rExpertQuery,
-  scales,
-  shiny,
-  shinyjs,
-  shinythemes
+    bsicons,
+    bslib,
+    DiagrammeR,
+    dplyr (>= 1.1.0),
+    DT,
+    ggplot2,
+    htmlwidgets,
+    httr2,
+    jsonlite,
+    lubridate (>= 1.5.0),
+    plotly,
+    rExpertQuery,
+    scales,
+    shiny,
+    shinyjs,
+    shinythemes
 Remotes:
-  USEPA/rExpertQuery@develop
+    USEPA/rExpertQuery@develop
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE, load = "installed")
+RoxygenNote: 7.3.3
+Depends: 
+    R (>= 3.5)
+LazyData: true
