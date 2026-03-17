@@ -12,8 +12,7 @@ Expert Query web services and are refreshed weekly.
 
 To run this application locally, you must first have R and R Studio installed.
 
-You can install and/or update the [rExpertQuery Package](https://github.com/USEPA/rExpertQuery) and 
-all dependencies by running:
+You can install and/or update the Expert Query TMDL Dashboard and all dependencies by running:
 
 ```{r}
 if(!"remotes"%in%installed.packages()){
