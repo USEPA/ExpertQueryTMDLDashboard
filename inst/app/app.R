@@ -11,7 +11,7 @@ library(bsicons)
 # Bug fixes/To do list (HRM 11/24/25):
 # add download all button (to download all tables/plots in one zip file)
 
-load("app/data/EQ_data.RData")
+load("inst/app/data/EQ_data.RData")
 
 # UI
 ui <- tagList(
