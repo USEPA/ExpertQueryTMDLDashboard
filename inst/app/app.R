@@ -1,17 +1,7 @@
-library(shiny)
-library(shinyjs)
-library(DT)
-library(ggplot2)
-library(plotly)
-library(bslib)
-library(scales)
-library(shinythemes)
-library(bsicons)
-
 # Bug fixes/To do list (HRM 11/24/25):
 # add download all button (to download all tables/plots in one zip file)
 
-load("app/data/EQ_data.RData")
+load("inst/app/data/EQ_data.RData")
 
 # UI
 ui <- tagList(
