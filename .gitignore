@@ -21,6 +21,7 @@
 # RStudio files
 .Rproj.user/
 ExpertQueryTMDLDash.Rproj
+*.Rproj
 
 # produced vignettes
 vignettes/*.html
