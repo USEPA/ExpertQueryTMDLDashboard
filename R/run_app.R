@@ -26,6 +26,6 @@ run_app <- function() {
     )
   }
   options(TMDLDash.app_dir = app_dir)
-  shiny::runApp(app_dir, display.mode = "normal", ...)
+  shiny::runApp(app_dir, display.mode = "normal")
 }
 
