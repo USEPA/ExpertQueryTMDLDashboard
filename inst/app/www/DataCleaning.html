@@ -1630,19 +1630,19 @@ assessment methodologies.</p>
 <p>Expert Query are updated on a weekly basis. The data set for this
 dashboard is refreshed weekly to ensure that the most recent TMDL data
 are displayed. The Expert Query data set currently used by the dashboard
-is from the Expert Query refresh on January 23, 2026 at 07:00 EST. It
-contains 1,951,819 rows.</p>
+is from the Expert Query refresh on March 14, 2026 at 12:00 UTC. It
+contains 1,951,019 rows.</p>
 </div>
 <div id="data-cleaning" class="section level2">
 <h2>Data Cleaning</h2>
-<div class="grViz html-widget html-fill-item" id="htmlwidget-2ed58a9f59aa6825ec13" style="width:768px;height:480px;"></div>
-<script type="application/json" data-for="htmlwidget-2ed58a9f59aa6825ec13">{"x":{"diagram":"\ndigraph flowchart {\n  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]\n  A [label = \"Raw Data\nRecords: 1,951,819\", width = 8.00, height = 4.00]\n  B [label = \"Unique Rows\nRecords: 509,546\", width = 2.09, height = 1.04]\n  C [label = \"Complete Rows\nRecords: 464,230\", width = 1.90, height = 0.95]\n  D [label = \"Clean Data \nRecords: 226,401\", width = 0.93, height = 0.95]\n  \n  A -> B [label = \"   duplicate rows removed\"]\n  B -> C [label = \"   rows missing pollutant or assesmentUnitIdentifier removed\"]\n  C -> D [label = \"   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant\"]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
+<div class="grViz html-widget html-fill-item" id="htmlwidget-eae0763c7a937bf5b45e" style="width:768px;height:480px;"></div>
+<script type="application/json" data-for="htmlwidget-eae0763c7a937bf5b45e">{"x":{"diagram":"\ndigraph flowchart {\n  node [fontname = Helvetica, shape = box, style = filled, fillcolor = lightblue]\n  A [label = \"Raw Data\nRecords: 1,951,019\", width = 8.00, height = 4.00]\n  B [label = \"Unique Rows\nRecords: 509,603\", width = 2.09, height = 1.04]\n  C [label = \"Complete Rows\nRecords: 464,287\", width = 1.90, height = 0.95]\n  D [label = \"Clean Data \nRecords: 226,474\", width = 0.93, height = 0.95]\n  \n  A -> B [label = \"   duplicate rows removed\"]\n  B -> C [label = \"   rows missing pollutant or assesmentUnitIdentifier removed\"]\n  C -> D [label = \"   consolidate addressedParameters for one row per actionId/assessmentUnitIdentifier/pollutant\"]\n}\n","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
 <p>The following columns were retained from the Expert Query TMDL data
 set for analysis: region, state, fiscalYearEstablished, pollutant,
 pollutantGroup, addressedParameter, actionId, actionName,
 assessmentUnitId, assessmentUnitName, and planSummaryLink. Once these
-columns were selected, any duplicate columns were removed. 1,495,258
-duplicate records were found, leading to the removal of 985,712 rows as
+columns were selected, any duplicate columns were removed. 1,494,404
+duplicate records were found, leading to the removal of 984,801 rows as
 the number of repeats per unique record ranged from 2 to 2,240.</p>
 <p>Any records missing pollutant or assessmentUnitId were also removed.
 There were 45,316 rows missing pollutant and 402 rows missing assessment
@@ -1650,7 +1650,7 @@ unit identifier. Some rows were missing both.</p>
 <p>Finally, the data set was grouped by unique combination of actionId,
 assessmentUnitId, and pollutant and a new column, addressedParameters,
 was created to list all applicable addressedParameter values in one
-column. This yielded a data set with 226,401 rows with each row
+column. This yielded a data set with 226,474 rows with each row
 representing a unique combination of assessmentUnitIdentifier,
 pollutant, and actionId. This clean data set is behind all of the data
 summaries and visualizations in the dashboard.</p>
