@@ -4,6 +4,7 @@ on:
   push:
   schedule:
     - cron: '15 06 * * 0' # This runs at 06:15 AM, only on Sunday
+  workflow:
 permissions: write-all
 
 jobs:

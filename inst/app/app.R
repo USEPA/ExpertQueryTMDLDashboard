@@ -416,9 +416,12 @@ server <- function(input, output, session) {
     paste0(
       "In this filtered data set there are : ", "<br>", "<br>",
       "<b>", count2, "</b>",
-      " unique combinations of assessmentUnitId and pollutant (revisions are not counted as separate TMDLs)", "<br>", "<br>",
+      " unique combinations of assessmentUnitId and pollutant",  "<br>",
+      "<i>", "Number of TMDLs (i.e., waterbody/pollutant combinations) currently in place.", "</i>",
+      "<br>", "<br>",
       "<b>", count, "</b>",
-      "  unique combinations of actionId, assessmentUnitId and pollutant (revisions may be counted as separate TMDLs)", "<br>",
+      "  unique combinations of actionId, assessmentUnitId and pollutant", "<br>",
+      "<i>", "Number of TMDLs established, including TMDLs that were later revised and other variations.", "</i>",
       "<br>", "<br>",
       "Use radio buttons at the top of each tab to select the count method. ",
       "Some figures can only be displayed using the actionId/assessmentUnitId/pollutant because a single fiscalYearEstablished is required to plot the TMDL."
