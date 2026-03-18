@@ -223,6 +223,6 @@ save(filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg
 
 save(update.tmdls, orig.distinct.n, orig.dups.n, orig.dups.removed, orig.n,
      orig.noauid.n, orig.nopoll.n, orig.noauidpoll.n, max.dups, min.dups, filt.df.n,
-     file = "app/www/RMD_data.RData")
+     file = "inst/app/www/RMD_data.RData")
 }
 
