@@ -1,6 +1,6 @@
 #' Launch the TMDL Dashboard Shiny app
 #' @export
-run_app <- function(...) {
+run_app <- function() {
   # 1) Try the installed package location
   app_dir <- system.file("app", package = "TMDLDash")
   
