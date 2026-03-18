@@ -4,7 +4,7 @@
 \alias{run_app}
 \title{Launch the TMDL Dashboard Shiny app}
 \usage{
-run_app(...)
+run_app()
 }
 \description{
 Launch the TMDL Dashboard Shiny app
