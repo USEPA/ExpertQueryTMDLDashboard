@@ -20,7 +20,7 @@ load(eq_path)
 ui <- bslib::page_fluid(
   theme = bslib::bs_theme(version = 5),            # or 4 if you used BS4 classes
   # Load your app-local CSS from www/
-  tags$head(tags$link(rel = "stylesheet", href = "styles.css")),
+  tags$head(shiny::includeCSS(system.file("app/www/styles.css", package = "TMDLDash"))),
   # If header.html is just a banner fragment
   shiny::includeHTML("header.html"),               # make sure it has no <html>/<head>/<body>
   page_sidebar(
