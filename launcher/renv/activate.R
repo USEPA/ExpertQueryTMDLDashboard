@@ -3,7 +3,7 @@ local({
 
   # the requested version of renv
   version <- "1.1.8"
-  attr(version, "md5") <- "cbffd086c66739a0fdaac7a30b4aa65c"
+  attr(version, "md5") <- "9e79b1f04cf20d4d1e1c1945c89131cf"
   attr(version, "sha") <- NULL
 
   # the project directory
@@ -226,13 +226,17 @@ local({
     section <- header(sprintf("Bootstrapping renv %s", friendly))
     catf(section)
   
+    # ensure the target library path exists; required for file.copy(..., recursive = TRUE)
+    dir.create(library, showWarnings = FALSE, recursive = TRUE)
+  
     # try to install renv from cache
     md5 <- attr(version, "md5", exact = TRUE)
     if (length(md5)) {
       pkgpath <- renv_bootstrap_find(version)
       if (length(pkgpath) && file.exists(pkgpath)) {
-        file.copy(pkgpath, library, recursive = TRUE)
-        return(invisible())
+        ok <- file.copy(pkgpath, library, recursive = TRUE)
+        if (isTRUE(ok))
+          return(invisible())
       }
     }
   
@@ -1231,6 +1235,21 @@ local({
   }
   
   renv_bootstrap_run <- function(project, libpath, version) {
+    tryCatch(
+      renv_bootstrap_run_impl(project, libpath, version),
+      error = function(e) {
+        msg <- paste(
+          "failed to bootstrap renv: the project will not be loaded.",
+          paste("Reason:", conditionMessage(e)),
+          "Use `renv::activate()` to re-initialize the project.",
+          sep = "\n"
+        )
+        warning(msg, call. = FALSE)
+      }
+    )
+  }
+  
+  renv_bootstrap_run_impl <- function(project, libpath, version) {
   
     # perform bootstrap
     bootstrap(version, libpath)
