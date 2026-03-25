@@ -11,8 +11,7 @@ library(bsicons)
 # Bug fixes/To do list (HRM 11/24/25):
 # add download all button (to download all tables/plots in one zip file)
 
-app_dir <- getOption("TMDLDash.app_dir", default = system.file("app", package = "TMDLDash"))
-eq_path <- file.path(app_dir, "data", "EQ_data.RData")
+eq_path <- file.path("data", "EQ_data.RData")
 stopifnot(file.exists(eq_path))
 load(eq_path)
 
@@ -20,13 +19,13 @@ load(eq_path)
 ui <- bslib::page_fluid(
   theme = bslib::bs_theme(version = 5),            # or 4 if you used BS4 classes
   # Load your app-local CSS from www/
-  tags$head(shiny::includeCSS(system.file("app/www/styles.css", package = "TMDLDash"))),
+  tags$head(tags$link(rel = "stylesheet", href = "styles.css")),
   # If header.html is just a banner fragment
   shiny::includeHTML("header.html"),               # make sure it has no <html>/<head>/<body>
   page_sidebar(
     # url options
     tags$head(
-      tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropogation(); });")),
+      tags$script(HTML("$(document).on('click', 'a', function(e) { e.stopPropagation(); });")),
       tags$style(HTML("
                     .accordion-button {
                     background-color: #005EA2;
@@ -216,14 +215,12 @@ ui <- bslib::page_fluid(
       )
     )
   ),
-  shiny::includeHTML(file.path(app_dir, "footer.html"))
+  shiny::includeHTML("footer.html")
 )
 
 
 # Server
 server <- function(input, output, session) {
-  # force links to open in browser
-  options(shiny.launch.browser = TRUE)
 
   # create dynamic filter so region selection will limit states available
   observe({
@@ -515,10 +512,14 @@ server <- function(input, output, session) {
   current_category <- reactiveVal()
 
   # observe user click to select category (pollutant group)
-  observe({
-    cd <- event_data("plotly_click")$customdata[[1]]
-    if (isTRUE(cd %in% categories)) current_category(cd)
-  })
+  observeEvent(session$clientData$output_pie_width, {
+    observeEvent(plotly::event_data("plotly_click", source = "pollutant_pie"), {
+      ed <- plotly::event_data("plotly_click", source = "pollutant_pie")
+      if (!is.null(ed) && "customdata" %in% names(ed) && length(ed$customdata) > 0) {
+        current_category(ed$customdata[[1]])
+      }
+    }, ignoreInit = TRUE)
+  }, once = TRUE)
 
   # create reactive df to count tmdls by pollutant group, unless a pollutant group is selected to use for "Pollutants" plot and table
   pies_data <- reactive({
@@ -589,7 +590,8 @@ server <- function(input, output, session) {
       type = "pie",
       textinfo = "none",
       hoverinfo = "label+value+percent",
-      customdata = ~labels
+      customdata = ~labels,
+      source = "pollutant_pie"
     ) %>%
       plotly::layout(
         title = list(
@@ -618,7 +620,7 @@ server <- function(input, output, session) {
         margin = list(b = 100, t = 100),
         showlegend = TRUE
       ) %>%
-      event_register("plotly_click")
+      plotly::event_register("plotly_click")
 
     return(pie_plot)
   })
@@ -740,7 +742,7 @@ server <- function(input, output, session) {
       paste("data-", Sys.Date(), ".csv", sep = "")
     },
     content = function(file) {
-      write.csv(data(), file)
+      write.csv(state_df(), file)
     }
   )
 
