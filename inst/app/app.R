@@ -17,12 +17,12 @@ stopifnot(file.exists(eq_path))
 load(eq_path)
 
 # UI
-ui <- tagList(
-  tags$head(
-    tags$link(rel = "stylesheet", type = "text/css", href = "styles.css"),
-    tags$html(class = "no-js", lang = "en")
-  ),
-  shiny::includeHTML(file.path(app_dir, "header.html")),
+ui <- bslib::page_fluid(
+  theme = bslib::bs_theme(version = 5),            # or 4 if you used BS4 classes
+  # Load your app-local CSS from www/
+  tags$head(tags$link(rel = "stylesheet", href = "styles.css")),
+  # If header.html is just a banner fragment
+  shiny::includeHTML("header.html"),               # make sure it has no <html>/<head>/<body>
   page_sidebar(
     # url options
     tags$head(
