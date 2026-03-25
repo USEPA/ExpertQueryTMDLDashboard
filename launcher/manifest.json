@@ -2053,7 +2053,7 @@
         "URL": "https://rstudio.github.io/renv/, https://github.com/rstudio/renv",
         "BugReports": "https://github.com/rstudio/renv/issues",
         "Imports": "utils",
-        "Suggests": "BiocManager, cli, compiler, covr, cpp11, curl, devtools,\ngenerics, gitcreds, jsonlite, jsonvalidate, knitr, miniUI,\nmodules, packrat, pak, R6, remotes, reticulate, rmarkdown,\nrstudioapi, shiny, testthat, uuid, waldo, yaml, webfakes",
+        "Suggests": "BiocManager, cli, compiler, covr, cpp11, curl, devtools,\ngenerics, gitcreds, jsonlite, jsonvalidate, knitr, miniUI,\nmodules, pak, R6, remotes, reticulate, rmarkdown,\nrstudioapi, shiny, testthat, uuid, waldo, yaml, webfakes",
         "Encoding": "UTF-8",
         "RoxygenNote": "7.3.3",
         "VignetteBuilder": "knitr",

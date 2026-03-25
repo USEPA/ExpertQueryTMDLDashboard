@@ -2612,7 +2612,6 @@
         "knitr",
         "miniUI",
         "modules",
-        "packrat",
         "pak",
         "R6",
         "remotes",
