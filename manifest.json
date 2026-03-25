@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "locale": "en_US",
+  "platform": "4.4.2",
+  "metadata": {
+    "appmode": "static",
+    "primary_rmd": null,
+    "primary_html": "inst/app/footer.html",
+    "content_category": null,
+    "has_parameters": false
+  },
+  "packages": null,
+  "files": {
+    ".gitattributes": {
+      "checksum": "dcb240655dcbf79b8706d11c8c2a169c"
+    },
+    ".github/workflows/import-rEQ.yaml": {
+      "checksum": "bff2a36ffd03bdf2b070c5d48a481b48"
+    },
+    ".github/workflows/R-CMD-check.yaml": {
+      "checksum": "a66df8210c6439edaa234b6ea44a9cd7"
+    },
+    ".github/workflows/render-rmarkdown.yaml": {
+      "checksum": "dc674cfa22af9ed92501a1a5b3d927ff"
+    },
+    ".Rbuildignore": {
+      "checksum": "aad3dd2aacdaecf7b65b28d2d8be3c18"
+    },
+    "DESCRIPTION": {
+      "checksum": "e4f1b1fe9e827092a270fc552ebd8a3e"
+    },
+    "dev/devtools.R": {
+      "checksum": "2d60a8a7315d02f5b7a411e2b0f62ddf"
+    },
+    "inst/app/app.R": {
+      "checksum": "e0c35d871824e8279fae8fd22f40f251"
+    },
+    "inst/app/data/EQ_data.RData": {
+      "checksum": "02cf544c16364ede05c6cfe092e01556"
+    },
+    "inst/app/data/importEQdata.R": {
+      "checksum": "07f74e48d0f29629c26e7fd821745f6d"
+    },
+    "inst/app/footer.html": {
+      "checksum": "77321fbca8e91a35252e4e91cf3cded4"
+    },
+    "inst/app/header.html": {
+      "checksum": "cca14da636d9b18fac5ce845558b37d4"
+    },
+    "inst/app/www/DataCleaning.html": {
+      "checksum": "5a058d1b79ec9b18a91d66c0f9f6d13c"
+    },
+    "inst/app/www/DataCleaning.Rmd": {
+      "checksum": "739797b81d7ee03ca368ec5775457954"
+    },
+    "inst/app/www/RMD_data.RData": {
+      "checksum": "e78a1f0f20ef5508a502c84910220f74"
+    },
+    "inst/app/www/styles.css": {
+      "checksum": "be55aeab402ac65e669a23f7cb81c792"
+    },
+    "LICENSE": {
+      "checksum": "473a7959b44c2f42c375d904305b6307"
+    },
+    "man/run_app.Rd": {
+      "checksum": "18e94783058273aa504c05f0db1e9611"
+    },
+    "NAMESPACE": {
+      "checksum": "96c9ed267074b546d7b03a3f247057d6"
+    },
+    "R/run_app.R": {
+      "checksum": "821e7ad77558d16b0f7a63b63737ccb9"
+    },
+    "README.md": {
+      "checksum": "8a352eb834acdaf985ea3a03cc9eee0c"
+    }
+  },
+  "users": null
+}
