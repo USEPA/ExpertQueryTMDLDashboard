@@ -11,6 +11,13 @@ library(bsicons)
 # Bug fixes/To do list (HRM 11/24/25):
 # add download all button (to download all tables/plots in one zip file)
 
+options(shiny.fullstacktrace = TRUE)
+message("App init start: ", Sys.time())
+message("pkg_app_dir: ", pkg_app_dir)
+message("eq_path exists: ", file.exists(eq_path))
+
+pkg_app_dir <- system.file("app", package = "TMDLDash")
+
 eq_path <- file.path("data", "EQ_data.RData")
 stopifnot(file.exists(eq_path))
 load(eq_path)
