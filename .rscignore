@@ -1,0 +1,8 @@
+^\.git$
+^\.Rproj\.user$
+^dev/
+^launcher/
+^\.github/
+^.*\.Rhistory$
+^manifest\.json$   # will be regenerated
+^inst/app/www/.*\.Rmd$
