@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "locale": "en_US",
+  "platform": "4.4.2",
+  "metadata": {
+    "appmode": "static",
+    "primary_rmd": null,
+    "primary_html": "inst/app/footer.html",
+    "content_category": null,
+    "has_parameters": false
+  },
+  "packages": null,
+  "files": {
+    ".gitattributes": {
+      "checksum": "dcb240655dcbf79b8706d11c8c2a169c"
+    },
+    ".github/workflows/import-rEQ.yaml": {
+      "checksum": "bff2a36ffd03bdf2b070c5d48a481b48"
+    },
+    ".github/workflows/R-CMD-check.yaml": {
+      "checksum": "f5b3261d7ecc02ea8f2f45f5c9901d2d"
+    },
+    ".github/workflows/render-rmarkdown.yaml": {
+      "checksum": "dc674cfa22af9ed92501a1a5b3d927ff"
+    },
+    ".Rbuildignore": {
+      "checksum": "aad3dd2aacdaecf7b65b28d2d8be3c18"
+    },
+    "DESCRIPTION": {
+      "checksum": "e4f1b1fe9e827092a270fc552ebd8a3e"
+    },
+    "dev/devtools.R": {
+      "checksum": "0f4061294057135315ef09cf57e84535"
+    },
+    "inst/app/app.R": {
+      "checksum": "e47ca0a67badbd2d36d648e02b4aa973"
+    },
+    "inst/app/data/EQ_data.RData": {
+      "checksum": "f85387ca0003cb78be3b9f1b63194d80"
+    },
+    "inst/app/data/importEQdata.R": {
+      "checksum": "07f74e48d0f29629c26e7fd821745f6d"
+    },
+    "inst/app/footer.html": {
+      "checksum": "77321fbca8e91a35252e4e91cf3cded4"
+    },
+    "inst/app/header.html": {
+      "checksum": "cca14da636d9b18fac5ce845558b37d4"
+    },
+    "inst/app/www/DataCleaning.html": {
+      "checksum": "78344ccfd69820624d7c6d718f294552"
+    },
+    "inst/app/www/DataCleaning.Rmd": {
+      "checksum": "739797b81d7ee03ca368ec5775457954"
+    },
+    "inst/app/www/RMD_data.RData": {
+      "checksum": "95dcdf7b2ba646ebbefbed831f87dfbb"
+    },
+    "inst/app/www/styles.css": {
+      "checksum": "be55aeab402ac65e669a23f7cb81c792"
+    },
+    "launcher/.Rprofile": {
+      "checksum": "2c6902db4d6151c2d69ff36396a5371c"
+    },
+    "launcher/app.R": {
+      "checksum": "dc3e1220271536adb45f6690a50fe9f1"
+    },
+    "launcher/renv.lock": {
+      "checksum": "fb56fedb450f42ef144b48cae6ed9ac7"
+    },
+    "LICENSE": {
+      "checksum": "473a7959b44c2f42c375d904305b6307"
+    },
+    "man/run_app.Rd": {
+      "checksum": "18e94783058273aa504c05f0db1e9611"
+    },
+    "NAMESPACE": {
+      "checksum": "96c9ed267074b546d7b03a3f247057d6"
+    },
+    "R/run_app.R": {
+      "checksum": "5fdac162d6d98ed60e92c4caf1b2775d"
+    },
+    "README.md": {
+      "checksum": "8a352eb834acdaf985ea3a03cc9eee0c"
+    }
+  },
+  "users": null
+}
