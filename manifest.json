@@ -3958,7 +3958,10 @@
       "checksum": "be55aeab402ac65e669a23f7cb81c792"
     },
     "launcher/.Rprofile": {
-      "checksum": "e51836c1da1fc2f1af55ad4a0f77ac76"
+      "checksum": "94c5298d2a5cce3b24940a671ac5886d"
+    },
+    "launcher/app.R": {
+      "checksum": "dc3e1220271536adb45f6690a50fe9f1"
     },
     "launcher/renv.lock": {
       "checksum": "fb56fedb450f42ef144b48cae6ed9ac7"
