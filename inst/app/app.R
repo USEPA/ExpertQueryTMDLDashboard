@@ -1,12 +1,13 @@
-library(shiny)
-library(shinyjs)
+library(bsicons)
+library(bslib)
 library(DT)
 library(ggplot2)
+library(later)
 library(plotly)
-library(bslib)
 library(scales)
+library(shiny)
+library(shinyjs)
 library(shinythemes)
-library(bsicons)
 
 # Resolve the installed app directory (works for installed package and dev)
 pkg_app_dir <- getOption(
@@ -239,35 +240,34 @@ ui <- bslib::page_fluid(
 
 
 # Server
-server <- function(input, output, session) {
-  # Reactive flags/values initialized empty
-  data_ready  <- reactiveVal(FALSE)
-  reactive_df <- reactiveVal(NULL)
-  original_df <- reactiveVal(NULL)
-  
-  # Load the large data once, after the UI is first rendered
-  session$onFlushed(function() {
+session$onFlushed(function() {
+  message("startup: onFlushed begin")
+  later::later(function() {
     if (!isTRUE(EQ_cache$loaded)) {
-      message("startup: loading EQ_data start")
+      message("startup: deferred load begin")
       
-      # Resolve the .RData path robustly for a package
       path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
       stopifnot(nzchar(path) && file.exists(path))
       env <- new.env(parent = emptyenv())
       load(path, envir = env)
-      
-      # Move all loaded objects into the cache (names must match your .RData)
       list2env(as.list(env), envir = EQ_cache)
       EQ_cache$loaded <- TRUE
       
-      # Initialize your reactive datasets from the loaded objects
+      # Optional: compute max_year if it’s not in the .RData
+      if (is.null(EQ_cache$max_year) &&
+          !is.null(EQ_cache$filt.df) &&
+          "fiscalYearEstablished" %in% names(EQ_cache$filt.df)) {
+        EQ_cache$max_year <- max(EQ_cache$filt.df$fiscalYearEstablished, na.rm = TRUE)
+      }
+      
       reactive_df(EQ_cache$filt.df)
       original_df(EQ_cache$filt.df)
-      
       data_ready(TRUE)
-      message("startup: loading EQ_data end")
+      message("startup: deferred load end")
     }
-  }, once = TRUE)
+  }, delay = 0)  # schedule after the current response finishes
+  message("startup: onFlushed scheduled")
+}, once = TRUE)
 
   # create dynamic filter so region selection will limit states available
   observe({
