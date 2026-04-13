@@ -1,0 +1,58 @@
+name: Rebuild renv.lock for Posit Connect
+
+on:
+  workflow_dispatch:
+    inputs:
+      r_version:
+        description: "R version to target"
+        required: true
+        default: "4.3.3"
+      ubuntu_codename:
+        description: "Ubuntu codename for PPM (ubuntu-latest is jammy)"
+        required: true
+        default: "jammy"
+
+jobs:
+  rebuild-lock:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      # Use Posit Public Package Manager for fast Linux binaries.
+      # If your org has an internal PPM, replace this URL with that instead.
+      RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.posit.co/cran/__linux__/${{ inputs.ubuntu_codename }}/latest
+      RENV_CONFIG_PAK_ENABLED: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ inputs.r_version }}
+
+      - name: Setup dependencies (system reqs + renv)
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          use-public-rspm: true
+          install-system-requirements: true
+          extra-packages: any::renv
+
+      - name: Restore and snapshot with renv
+        run: |
+          Rscript -e "renv::restore(prompt = FALSE)"
+          Rscript -e "renv::snapshot(prompt = FALSE)"
+
+      - name: Create PR with updated lockfile
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "Rebuild renv.lock under R ${{ inputs.r_version }}"
+          title: "Rebuild renv.lock under R ${{ inputs.r_version }}"
+          body: |
+            Updates renv.lock to target R ${{ inputs.r_version }} so Posit Connect can build without R 4.4.x.
+            Uses PPM for Linux binaries; merge to trigger a new Connect build.
+          branch: ci/rebuild-renv-lock-r-${{ inputs.r_version }}
+          add-paths: |
+            renv.lock
+            renv/settings.dcf
