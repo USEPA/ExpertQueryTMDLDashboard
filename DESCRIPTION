@@ -32,5 +32,5 @@ Encoding: UTF-8
 Roxygen: list(markdown = TRUE, load = "installed")
 RoxygenNote: 7.3.3
 Depends: 
-    R (>= 4.10)
+    R (>= 4.3.0)
 LazyData: true
