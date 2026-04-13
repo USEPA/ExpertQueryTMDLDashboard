@@ -219,7 +219,7 @@ rm(update.base, update.dates, update.df, aus, actions)
 save(filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg,
      pollutants_groups, parameters, max_year, years_list, categories, update.tmdls,
      act_agencies,
-     file = "inst/app/data/EQ_data.RData")
+     file = "inst/extdata/importEQdata.R")
 
 save(update.tmdls, orig.distinct.n, orig.dups.n, orig.dups.removed, orig.n,
      orig.noauid.n, orig.nopoll.n, orig.noauidpoll.n, max.dups, min.dups, filt.df.n,
