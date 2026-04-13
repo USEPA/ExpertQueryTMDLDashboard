@@ -31,16 +31,16 @@ jobs:
         run: |
           Rscript - <<'RS'
           options(repos = c(CRAN = Sys.getenv('CRAN_REPO')))
-          install.packages(c('renv','yaml','rsconnect','jsonlite'))
+          install.packages(c('renv','yaml','rsconnect','remotes','jsonlite'))
           RS
 
-      # Optional: pin versions compatible with R 4.3.x
+      # Optional pins to keep deps compatible with R 4.3.x
       - name: Pin packages for R ${{ env.R_VERSION }}
         run: |
           Rscript - <<'RS'
           # Matrix >= 1.7 requires R >= 4.4; pin to last 4.3-compatible
           try(renv::record(list(Matrix = '1.6-5')), silent = TRUE)
-          # Add more pins if CI reports other R>=4.4 requirements, e.g.:
+          # If CI later fails on others requiring R >= 4.4, add pins here, e.g.:
           # try(renv::record(list(DiagrammeR = '1.0.11', igraph = '1.5.1')), silent = TRUE)
           RS
 
@@ -50,13 +50,30 @@ jobs:
         run: |
           Rscript - <<'RS'
           options(repos = c(CRAN = Sys.getenv('CRAN_REPO')))
-          deps <- renv::dependencies(progress = FALSE)
+          # Detect app directory
+          appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
+
+          # Collect dependencies from app sources
+          deps <- renv::dependencies(paths = appdir, progress = FALSE)
           pkgs <- unique(na.omit(deps$Package))
+
+          # Install CRAN deps first (exclude base + your own package)
           base <- rownames(installed.packages(priority = 'base'))
-          pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))  # exclude base + your own package if present
-          for (p in pkgs) {
-            message('Installing ', p, ' ...')
-            try(renv::install(p), silent = TRUE)
+          cran_pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))
+          if (length(cran_pkgs)) {
+            for (p in cran_pkgs) {
+              message('Installing ', p, ' ...')
+              try(renv::install(p), silent = TRUE)
+            }
+          }
+
+          # If TMDLDash is a package at repo root, install it locally
+          if (file.exists('DESCRIPTION')) {
+            d <- readLines('DESCRIPTION', warn = FALSE)
+            if (any(grepl('^Package:\\s*TMDLDash\\b', d))) {
+              message('Installing local package TMDLDash ...')
+              remotes::install_local('.', upgrade = 'never', dependencies = TRUE)
+            }
           }
           RS
 
@@ -65,14 +82,20 @@ jobs:
           Rscript - <<'RS'
           appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
 
-          # Temporarily remove any renv.lock so writeManifest doesn't try to parse it
+          # Temporarily move renv.lock out of the way so writeManifest doesn't parse it
           lf <- file.path(appdir, 'renv.lock')
           if (file.exists(lf)) file.rename(lf, paste0(lf, '.bak'))
 
           rsconnect::writeManifest(appDir = appdir, force = TRUE)
 
           man <- jsonlite::read_json(file.path(appdir, 'manifest.json'))
-          rv <- man$metadata$rVersion %||% (man$r$version %||% 'unknown')
+          rv <- if (!is.null(man$metadata) && !is.null(man$metadata$rVersion)) {
+            man$metadata$rVersion
+          } else if (!is.null(man$r) && !is.null(man$r$version)) {
+            man$r$version
+          } else {
+            'unknown'
+          }
           cat('Manifest R version:', rv, '\n')
           RS
 
