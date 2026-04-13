@@ -3,7 +3,7 @@ name: Rebuild renv.lock for Posit Connect (staging)
 on:
   push:
     branches: [ staging ]      # auto-run on any push to staging
-  workflow_dispatch:            # also allow manual runs
+  workflow_dispatch:            # allow manual runs
 
 jobs:
   rebuild-lock:
@@ -11,9 +11,9 @@ jobs:
     permissions:
       contents: write
     env:
-      # Target R version to rebuild against (try 4.3.3 first; if Connect still complains, change to 4.2.3)
+      # Target R; try 4.3.3 first. If Connect still says 4.3.x not found, change to '4.2.3'.
       R_VERSION: '4.3.3'
-      # Posit Public Package Manager for fast Linux binaries (jammy = ubuntu-latest)
+      # Fast binaries via Posit Public Package Manager (jammy = ubuntu-latest)
       RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
     steps:
@@ -30,9 +30,13 @@ jobs:
       - name: Install renv
         run: Rscript -e "install.packages('renv', repos = Sys.getenv('RENV_CONFIG_REPOS_OVERRIDE'))"
 
-      - name: Restore and snapshot with renv
+      # Install compatible dependency versions for this R (ignore the old lockfile),
+      # then write a fresh renv.lock via snapshot.
+      - name: Resolve deps for ${{ env.R_VERSION }} and snapshot
+        env:
+          RENV_CONFIG_IGNORE_LOCKFILE: true
         run: |
-          Rscript -e "renv::restore(prompt = FALSE)"
+          Rscript -e "deps <- renv::dependencies(progress = FALSE); pkgs <- unique(deps$Package); pkgs <- setdiff(pkgs, c('TMDLDash')); if (length(pkgs)) renv::install(pkgs)"
           Rscript -e "renv::snapshot(prompt = FALSE)"
 
       - name: Commit lockfile changes back to staging
