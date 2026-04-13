@@ -11,11 +11,11 @@ jobs:
     permissions:
       contents: write
     env:
-      # Try 4.3.3 first; if Connect still can’t find 4.3.x, change to '4.2.3' and re-run.
+      # Try 4.3.3 first; if Connect still can't find 4.3.x, change to '4.2.3' and re-run.
       R_VERSION: '4.3.3'
       # Fast binaries for Ubuntu jammy (ubuntu-latest)
       CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
-      # Prevent renv autoloader from trying to load a specific renv version
+      # Prevent renv autoloader from interfering in CI
       RENV_CONFIG_AUTOLOADER_ENABLED: 'false'
 
     steps:
@@ -29,16 +29,16 @@ jobs:
         with:
           r-version: ${{ env.R_VERSION }}
 
-      - name: Ensure base tools (renv, rsconnect, remotes, yaml, jsonlite)
+      - name: Ensure base tools (renv, rsconnect, yaml, jsonlite)
         run: |
           Rscript - <<'RS'
           repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
-          need <- c('renv','rsconnect','remotes','yaml','jsonlite')
+          need <- c('renv','rsconnect','yaml','jsonlite')
           miss <- need[!vapply(need, requireNamespace, logical(1), quietly = TRUE)]
           if (length(miss)) install.packages(miss, repos = repo)
           RS
 
-      # Optional pins to keep deps compatible with R 4.3.x
+      # Optional: pin packages compatible with R 4.3.x
       - name: Pin packages for R ${{ env.R_VERSION }}
         run: |
           Rscript - <<'RS'
@@ -47,11 +47,9 @@ jobs:
           }
           # Matrix >= 1.7 requires R >= 4.4; pin to last 4.3-compatible
           try(renv::record(list(Matrix = '1.6-5')), silent = TRUE)
-          # If CI later fails on others requiring R >= 4.4, add pins here, e.g.:
-          # try(renv::record(list(DiagrammeR = '1.0.11', igraph = '1.5.1')), silent = TRUE)
           RS
 
-      - name: Install project dependencies (ignore any lockfile)
+      - name: Install project dependencies from app directory (skip TMDLDash)
         env:
           RENV_CONFIG_IGNORE_LOCKFILE: true
         run: |
@@ -60,45 +58,49 @@ jobs:
           if (!requireNamespace('renv', quietly = TRUE)) {
             install.packages('renv', repos = repo)
           }
-          if (!requireNamespace('remotes', quietly = TRUE)) {
-            install.packages('remotes', repos = repo)
-          }
-          # Detect app directory (adjust if Primary App Directory is ".")
+
+          # Detect app directory (inst/app if present, otherwise repo root)
           appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
 
           # Discover dependencies in the app directory
           deps <- renv::dependencies(path = appdir, progress = FALSE)
           pkgs <- unique(na.omit(deps$Package))
 
-          # Install CRAN deps first (exclude base + your own package)
+          # Exclude base packages and TMDLDash (do not install it in Option A)
           base <- rownames(installed.packages(priority = 'base'))
           cran_pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))
+
+          # Install remaining deps from CRAN/PPM
           if (length(cran_pkgs)) {
             for (p in cran_pkgs) {
               message('Installing ', p, ' ...')
               try(renv::install(p), silent = TRUE)
             }
           }
-
-          # If this repo is an R package named TMDLDash, install it locally
-          if (file.exists('DESCRIPTION')) {
-            d <- readLines('DESCRIPTION', warn = FALSE)
-            if (any(grepl('^Package:\\s*TMDLDash\\b', d))) {
-              message('Installing local package TMDLDash ...')
-              remotes::install_local('.', upgrade = 'never', dependencies = TRUE)
-            }
-          }
           RS
+
+      # Optional safety check: fail if the app references TMDLDash
+      - name: Ensure app does not reference TMDLDash (Option A)
+        shell: bash
+        run: |
+          APPDIR="inst/app"
+          [ -d "$APPDIR" ] || APPDIR="."
+          if grep -R --include="*.R" -nE "library\\(TMDLDash\\)|TMDLDash::" "$APPDIR"; then
+            echo "Found references to TMDLDash in app code. Remove them for Option A (or use Option B with a PAT)."
+            exit 1
+          fi
 
       - name: Write manifest into app directory and show R version
         run: |
           Rscript - <<'RS'
+          repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
           if (!requireNamespace('rsconnect', quietly = TRUE)) {
-            install.packages('rsconnect', repos = Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org'))
+            install.packages('rsconnect', repos = repo)
           }
           if (!requireNamespace('jsonlite', quietly = TRUE)) {
-            install.packages('jsonlite', repos = Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org'))
+            install.packages('jsonlite', repos = repo)
           }
+
           appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
 
           # Temporarily move renv.lock so writeManifest does not parse it
@@ -110,4 +112,15 @@ jobs:
           man_path <- file.path(appdir, 'manifest.json')
           man <- jsonlite::read_json(man_path, simplifyVector = TRUE)
           rv <- 'unknown'
-          if▍
+          if (!is.null(man$metadata) && !is.null(man$metadata$rVersion)) rv <- man$metadata$rVersion
+          if (!is.null(man$r) && !is.null(man$r$version)) rv <- man$r$version
+          cat('Manifest R version:', rv, '\n')
+          RS
+
+      - name: Commit manifest.json to staging
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add inst/app/manifest.json manifest.json || true
+          git commit -m "Add manifest.json generated under R ${{ env.R_VERSION }} (staging)" || echo "No changes to commit"
+          git push origin HEAD:staging
