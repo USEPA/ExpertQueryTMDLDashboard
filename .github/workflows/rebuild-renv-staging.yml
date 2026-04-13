@@ -27,28 +27,50 @@ jobs:
         with:
           r-version: ${{ env.R_VERSION }}
 
-      - name: Install renv and yaml
+      - name: Install renv and yaml (using PPM)
         run: |
-          Rscript -e "install.packages(c('renv','yaml'), repos = Sys.getenv('RENV_CONFIG_REPOS_OVERRIDE'))"
+          Rscript - <<'RS'
+          install.packages(c('renv','yaml'), repos = Sys.getenv('RENV_CONFIG_REPOS_OVERRIDE'))
+          RS
 
-      - name: Pin renv version and Matrix for R ${{ env.R_VERSION }}
+      - name: Pin renv and Matrix to compatible versions
         run: |
-          Rscript -e "renv::record('renv@1.2.1')"                 # align lockfile with installed renv
-          Rscript -e "renv::record(list(Matrix = '1.6-5'))"       # Matrix >= 1.7.x needs R >= 4.4
+          Rscript - <<'RS'
+          # Align lockfile with renv we just installed
+          renv::record('renv@1.2.1')
+          # Matrix >= 1.7.x requires R >= 4.4; pin to last 4.3-compatible
+          renv::record(list(Matrix = '1.6-5'))
+          RS
 
       # Install project dependencies compatible with this R (ignore old lockfile),
-      # install one by one to avoid the vector 'spec' error, then snapshot.
+      # install one by one to avoid vector-quoting issues, then snapshot a fresh lockfile.
       - name: Resolve deps for ${{ env.R_VERSION }} and snapshot
         env:
           RENV_CONFIG_IGNORE_LOCKFILE: true
         run: |
-          Rscript -e "
-            deps <- renv::dependencies(progress = FALSE);
-            pkgs <- unique(na.omit(deps$Package));
-            base <- rownames(installed.packages(priority = 'base'));
-            pkgs <- setdiff(pkgs, c(base, 'TMDLDash'));  # exclude base and your own pkg if present
-            if (length(pkgs)) {
-              for (p in pkgs) {
-                message('Installing ', p, ' ...');
-                tryCatch(renv::install(p), error = function(e) {
-                  message('Failed to▍
+          Rscript - <<'RS'
+          # Ensure renv uses the PPM repo for binaries
+          options(repos = c(CRAN = Sys.getenv('RENV_CONFIG_REPOS_OVERRIDE')))
+          deps <- renv::dependencies(progress = FALSE)
+          pkgs <- unique(na.omit(deps$Package))
+          base <- rownames(installed.packages(priority = 'base'))
+          pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))  # exclude base and your own pkg if present
+          if (length(pkgs)) {
+            for (p in pkgs) {
+              message('Installing ', p, ' ...')
+              tryCatch(
+                renv::install(p),
+                error = function(e) message('Failed to install ', p, ': ', conditionMessage(e))
+              )
+            }
+          }
+          renv::snapshot(prompt = FALSE)
+          RS
+
+      - name: Commit lockfile changes back to staging
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add renv.lock renv/settings.dcf || true
+          git commit -m "Rebuild renv.lock under R ${{ env.R_VERSION }} (staging)" || echo "No changes to commit"
+          git push origin HEAD:staging
