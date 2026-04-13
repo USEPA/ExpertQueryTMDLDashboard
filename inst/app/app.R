@@ -12,7 +12,10 @@ library(shinythemes)
 # Resolve the installed app directory (works for installed package and dev)
 pkg_app_dir <- getOption(
   "TMDLDash.app_dir",
-  default = tryCatch(system.file("app", package = "TMDLDash"), error = function(e) "")
+  default = tryCatch(
+    system.file("app", package = "TMDLDash"),
+    error = function(e) ""
+  )
 )
 
 if (!nzchar(pkg_app_dir) || !dir.exists(pkg_app_dir)) {
@@ -66,7 +69,7 @@ ui <- bslib::page_fluid(
     ),
     # create sidebar for user inputs
     sidebar = sidebar(
-      sliderInput("year", "Year:", min = 1975, max = max_year, value = c(1975, max_year), sep = ""),
+      sliderInput("year", "Year:", min = 1975, max = EQ_cache$max_year, value = c(1975, EQ_cache$max_year), sep = ""),
       selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
       selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
       selectInput("pollgroup", "Pollutant Group:", choices = sort(unique(pollutants_groups$pollutantGroup)), selected = NULL, multiple = TRUE),
@@ -864,7 +867,6 @@ session$onFlushed(function() {
       )
     plot
   })
-}
 
 # Run the app
 shinyApp(ui = ui, server = server)
