@@ -13,7 +13,7 @@ jobs:
     env:
       # Try 4.3.3 first; if Connect still can't find 4.3.x, change to '4.2.3' and re-run.
       R_VERSION: '4.3.3'
-      # Fast binaries for Ubuntu jammy
+      # Fast binaries for Ubuntu jammy (ubuntu-latest)
       CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
     steps:
@@ -34,7 +34,7 @@ jobs:
           install.packages(c('renv','yaml','rsconnect','remotes','jsonlite'))
           RS
 
-      # Optional pins to keep deps compatible with R 4.3.x
+      # Optional: pin packages to versions compatible with R 4.3.x
       - name: Pin packages for R ${{ env.R_VERSION }}
         run: |
           Rscript - <<'RS'
@@ -47,14 +47,15 @@ jobs:
       - name: Install project dependencies (ignore any lockfile)
         env:
           RENV_CONFIG_IGNORE_LOCKFILE: true
+          RENV_CONFIG_AUTOLOADER_ENABLED: false
         run: |
           Rscript - <<'RS'
           options(repos = c(CRAN = Sys.getenv('CRAN_REPO')))
-          # Detect app directory
+          # Detect app directory (adjust if your Primary App Directory is ".")
           appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
 
-          # Collect dependencies from app sources
-          deps <- renv::dependencies(paths = appdir, progress = FALSE)
+          # Discover dependencies in the app directory
+          deps <- renv::dependencies(path = appdir, progress = FALSE)
           pkgs <- unique(na.omit(deps$Package))
 
           # Install CRAN deps first (exclude base + your own package)
@@ -67,7 +68,7 @@ jobs:
             }
           }
 
-          # If TMDLDash is a package at repo root, install it locally
+          # If this repo is an R package named TMDLDash, install it locally
           if (file.exists('DESCRIPTION')) {
             d <- readLines('DESCRIPTION', warn = FALSE)
             if (any(grepl('^Package:\\s*TMDLDash\\b', d))) {
@@ -82,20 +83,17 @@ jobs:
           Rscript - <<'RS'
           appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
 
-          # Temporarily move renv.lock out of the way so writeManifest doesn't parse it
+          # Temporarily move renv.lock so writeManifest does not parse it
           lf <- file.path(appdir, 'renv.lock')
           if (file.exists(lf)) file.rename(lf, paste0(lf, '.bak'))
 
           rsconnect::writeManifest(appDir = appdir, force = TRUE)
 
-          man <- jsonlite::read_json(file.path(appdir, 'manifest.json'))
-          rv <- if (!is.null(man$metadata) && !is.null(man$metadata$rVersion)) {
-            man$metadata$rVersion
-          } else if (!is.null(man$r) && !is.null(man$r$version)) {
-            man$r$version
-          } else {
-            'unknown'
-          }
+          man_path <- file.path(appdir, 'manifest.json')
+          man <- jsonlite::read_json(man_path, simplifyVector = TRUE)
+          rv <- 'unknown'
+          if (!is.null(man$metadata) && !is.null(man$metadata$rVersion)) rv <- man$metadata$rVersion
+          if (!is.null(man$r) && !is.null(man$r$version)) rv <- man$r$version
           cat('Manifest R version:', rv, '\n')
           RS
 
