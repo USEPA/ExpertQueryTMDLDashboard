@@ -12,7 +12,7 @@ jobs:
       contents: write
     env:
       # Target R; try 4.3.3 first. If Connect still says 4.3.x not found, change to '4.2.3'.
-      R_VERSION: '4.3.3'
+      R_VERSION: '4.5.3'
       # Fast binaries via Posit Public Package Manager (jammy = ubuntu-latest)
       RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
@@ -38,8 +38,6 @@ jobs:
           Rscript - <<'RS'
           # Align lockfile with renv we just installed
           renv::record('renv@1.2.1')
-          # Matrix >= 1.7.x requires R >= 4.4; pin to last 4.3-compatible
-          renv::record(list(Matrix = '1.6-5'))
           RS
 
       # Install project dependencies compatible with this R (ignore old lockfile),

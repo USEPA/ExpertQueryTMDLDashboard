@@ -12,7 +12,7 @@ jobs:
       contents: write
     env:
       # Try 4.3.3 first; if Connect still can't find 4.3.x, change to '4.2.3' and re-run.
-      R_VERSION: '4.3.3'
+      R_VERSION: '4.5.3'
       # Fast binaries for Ubuntu jammy (ubuntu-latest)
       CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
       # Prevent renv autoloader from interfering in CI
@@ -45,8 +45,6 @@ jobs:
           if (!requireNamespace('renv', quietly = TRUE)) {
             install.packages('renv', repos = Sys.getenv('CRAN_REPO'))
           }
-          # Matrix >= 1.7 requires R >= 4.4; pin to last 4.3-compatible
-          try(renv::record(list(Matrix = '1.6-5')), silent = TRUE)
           RS
 
       - name: Install project dependencies from app directory (skip TMDLDash)
