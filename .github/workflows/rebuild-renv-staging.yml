@@ -2,42 +2,43 @@ name: Rebuild renv.lock for Posit Connect (staging)
 
 on:
   push:
-  branches: [ staging ]      # auto-run on any push to staging
-workflow_dispatch:            # also allow manual runs if Actions UI can see this branch
-  
-  jobs:
+    branches: [ staging ]      # auto-run on any push to staging
+  workflow_dispatch:            # also allow manual runs
+
+jobs:
   rebuild-lock:
-  runs-on: ubuntu-latest
-permissions:
-  contents: write
-env:
-  # Target R version to rebuild against (try 4.3.3 first; if Connect still complains, change to 4.2.3)
-  R_VERSION: '4.3.3'
-# Use Posit Public Package Manager for fast Linux binaries (jammy = ubuntu-latest)
-RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.posit.co/cran/__linux__/jammy/latest
-steps:
-  - name: Checkout staging
-uses: actions/checkout@v4
-with:
-  ref: staging
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      # Target R version to rebuild against (try 4.3.3 first; if Connect still complains, change to 4.2.3)
+      R_VERSION: '4.3.3'
+      # Posit Public Package Manager for fast Linux binaries (jammy = ubuntu-latest)
+      RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
-- name: Setup R
-uses: r-lib/actions/setup-r@v2
-with:
-  r-version: ${{ env.R_VERSION }}
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v4
+        with:
+          ref: staging
 
-- name: Install renv
-run: Rscript -e "install.packages('renv', repos = Sys.getenv('RENV_CONFIG_REPOS_OVERRIDE'))"
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ env.R_VERSION }}
 
-- name: Restore and snapshot with renv
-run: |
-  Rscript -e "renv::restore(prompt = FALSE)"
-Rscript -e "renv::snapshot(prompt = FALSE)"
+      - name: Install renv
+        run: Rscript -e "install.packages('renv', repos = Sys.getenv('RENV_CONFIG_REPOS_OVERRIDE'))"
 
-- name: Commit lockfile changes back to staging
-run: |
-  git config user.name "github-actions[bot]"
-git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-git add renv.lock renv/settings.dcf || true
-git commit -m "Rebuild renv.lock under R ${{ env.R_VERSION }} (staging)" || echo "No changes to commit"
-git push origin HEAD:staging
+      - name: Restore and snapshot with renv
+        run: |
+          Rscript -e "renv::restore(prompt = FALSE)"
+          Rscript -e "renv::snapshot(prompt = FALSE)"
+
+      - name: Commit lockfile changes back to staging
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add renv.lock renv/settings.dcf || true
+          git commit -m "Rebuild renv.lock under R ${{ env.R_VERSION }} (staging)" || echo "No changes to commit"
+          git push origin HEAD:staging
