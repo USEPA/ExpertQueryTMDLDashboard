@@ -1,0 +1,9 @@
+packrat
+packrat.lock
+.Rproj.user
+*.Rproj
+.git
+.gitignore
+.DS_Store
+renv/library
+renv/staging

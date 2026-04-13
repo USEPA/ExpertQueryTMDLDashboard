@@ -1,20 +1,40 @@
-library(shiny)
-library(shinyjs)
+library(bsicons)
+library(bslib)
 library(DT)
 library(ggplot2)
+library(later)
 library(plotly)
-library(bslib)
 library(scales)
+library(shiny)
+library(shinyjs)
 library(shinythemes)
-library(bsicons)
 
-# Bug fixes/To do list (HRM 11/24/25):
-# add download all button (to download all tables/plots in one zip file)
+# Resolve the installed app directory (works for installed package and dev)
+pkg_app_dir <- getOption(
+  "TMDLDash.app_dir",
+  default = tryCatch(system.file("app", package = "TMDLDash"), error = function(e) "")
+)
 
-eq_path <- file.path("data", "EQ_data.RData")
-stopifnot(file.exists(eq_path))
-load(eq_path)
+if (!nzchar(pkg_app_dir) || !dir.exists(pkg_app_dir)) {
+  # Fallbacks for development (e.g., devtools::load_all(), running from source)
+  pkg_path <- tryCatch(getNamespaceInfo("TMDLDash", "path"), error = function(e) "")
+  candidates <- c(
+    file.path(pkg_path, "inst", "app"),
+    file.path(getwd(),  "inst", "app")
+  )
+  pkg_app_dir <- candidates[dir.exists(candidates)][1]
+}
 
+if (!nzchar(pkg_app_dir) || !dir.exists(pkg_app_dir)) {
+  stop("pkg_app_dir could not be determined; ensure inst/app exists and run_app() sets TMDLDash.app_dir.")
+}
+
+options(shiny.fullstacktrace = TRUE)
+message("App init start: ", Sys.time())
+message("pkg_app_dir: ", pkg_app_dir)
+
+# Per-process cache for large data (shared across sessions in this R worker)
+EQ_cache <- new.env(parent = emptyenv())
 # UI
 ui <- bslib::page_fluid(
   theme = bslib::bs_theme(version = 5),            # or 4 if you used BS4 classes
@@ -220,15 +240,46 @@ ui <- bslib::page_fluid(
 
 
 # Server
-server <- function(input, output, session) {
+session$onFlushed(function() {
+  message("startup: onFlushed begin")
+  later::later(function() {
+    if (!isTRUE(EQ_cache$loaded)) {
+      message("startup: deferred load begin")
+      
+      path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
+      stopifnot(nzchar(path) && file.exists(path))
+      env <- new.env(parent = emptyenv())
+      load(path, envir = env)
+      list2env(as.list(env), envir = EQ_cache)
+      EQ_cache$loaded <- TRUE
+      
+      # Optional: compute max_year if it’s not in the .RData
+      if (is.null(EQ_cache$max_year) &&
+          !is.null(EQ_cache$filt.df) &&
+          "fiscalYearEstablished" %in% names(EQ_cache$filt.df)) {
+        EQ_cache$max_year <- max(EQ_cache$filt.df$fiscalYearEstablished, na.rm = TRUE)
+      }
+      
+      reactive_df(EQ_cache$filt.df)
+      original_df(EQ_cache$filt.df)
+      data_ready(TRUE)
+      message("startup: deferred load end")
+    }
+  }, delay = 0)  # schedule after the current response finishes
+  message("startup: onFlushed scheduled")
+}, once = TRUE)
 
   # create dynamic filter so region selection will limit states available
   observe({
+    req(data_ready())  # wait for data to load
+    
     selected_region <- input$region
+    sr <- EQ_cache$states_regions
+    
     if (is.null(selected_region) || length(selected_region) == 0) {
-      updateSelectInput(session, "state", choices = sort(unique(states_regions$state)))
+      updateSelectInput(session, "state", choices = sort(unique(sr$state)))
     } else {
-      filtered_states <- sort(unique(states_regions$state[states_regions$region %in% selected_region]))
+      filtered_states <- sort(unique(sr$state[sr$region %in% selected_region]))
       updateSelectInput(session, "state", choices = filtered_states)
     }
   })
@@ -236,60 +287,55 @@ server <- function(input, output, session) {
 
   # create dynamic filter so pollutant group selection will limit pollutants available
   observe({
+    req(data_ready())
+    
     selected_pollgroup <- input$pollgroup
+    pg <- EQ_cache$pollutants_groups
+    
     if (is.null(selected_pollgroup) || length(selected_pollgroup) == 0) {
-      updateSelectInput(session, "pollutant", choices = sort(unique(pollutants_groups$pollutant)))
+      updateSelectInput(session, "pollutant", choices = sort(unique(pg$pollutant)))
     } else {
-      filtered_pollutants <- sort(unique(pollutants_groups$pollutant[pollutants_groups$pollutantGroup %in% selected_pollgroup]))
-      updateSelectInput(session, "pollutant", choices = sort(unique(filtered_pollutants)))
+      filtered_pollutants <- sort(unique(pg$pollutant[pg$pollutantGroup %in% selected_pollgroup]))
+      updateSelectInput(session, "pollutant", choices = filtered_pollutants)
     }
   })
 
   # create dynamic filter so pollutant group and pollutant selection will limit addressed parameters available
   observe({
+    req(data_ready())  # ensure large data is loaded
+    
     selected_pollgroup <- input$pollgroup
     selected_pollutant <- input$pollutant
     
-    # # debugging: print selected inputs
-    # print(paste("Selected Pollutant Group:", paste(selected_pollgroup, collapse=", ")))
-    # print(paste("Selected Pollutant:", paste(selected_pollutant, collapse=", ")))
-    # 
+    pg_tbl   <- EQ_cache$addparameters_filter_pg
+    poll_tbl <- EQ_cache$addparameters_filter_poll
     
     # filter addressed parameters by pollutant group
     if (is.null(selected_pollgroup) || length(selected_pollgroup) == 0) {
-      filtered_pg_params <- sort(unique(addparameters_filter_pg$addressedParameter))
+      filtered_pg_params <- sort(unique(pg_tbl$addressedParameter))
     } else {
-      filtered_pg_params <- sort(unique(addparameters_filter_pg$addressedParameter[addparameters_filter_pg$pollutantGroup %in% selected_pollgroup]))
+      filtered_pg_params <- sort(unique(
+        pg_tbl$addressedParameter[pg_tbl$pollutantGroup %in% selected_pollgroup]
+      ))
     }
     
-    # filter addressed paramters by pollutant 
+    # filter addressed parameters by pollutant
     if (is.null(selected_pollutant) || length(selected_pollutant) == 0) {
-      filtered_poll_params <- sort(unique(addparameters_filter_poll$addressedParameter))
+      filtered_poll_params <- sort(unique(poll_tbl$addressedParameter))
     } else {
-      filtered_poll_params <- sort(unique(addparameters_filter_poll$addressedParameter[addparameters_filter_poll$pollutant %in% selected_pollutant]))
+      filtered_poll_params <- sort(unique(
+        poll_tbl$addressedParameter[poll_tbl$pollutant %in% selected_pollutant]
+      ))
     }
     
-    # compare the two lists and retain only those that are included in both
+    # intersect both filters and update the dropdown
     comb_param_filter <- intersect(filtered_pg_params, filtered_poll_params)
-    
-    # # debugging: print the filtered lists
-    # print(paste("Filtered by Pollutant Group:", paste(filtered_pg_params, collapse=", ")))
-    # print(paste("Filtered by Pollutant:", paste(filtered_poll_params, collapse=", ")))
-    # print(paste("Combined Filter:", paste(comb_param_filter, collapse=", ")))
-    
-    # update drop down menu for addressed parameters
     updateSelectInput(session, "addparam", choices = comb_param_filter)
   })
-  
-
-  # create reactive df for plots and tables
-  reactive_df <- reactiveVal(filt.df)
-
-  # create original df so underlying data for app can be reset
-  original_df <- reactiveVal(filt.df)
 
   # update reactive df based on user inputs
   observeEvent(input$update, {
+    req(data_ready())
     temp_df <- original_df()
 
     if (!is.null(input$year)) {
@@ -329,12 +375,12 @@ server <- function(input, output, session) {
 
   # reset reactive df to original df (remove all user inputs)
   observeEvent(input$clear, {
-    reactive_df(filt.df)
-    original_df(filt.df)
-
+    req(data_ready())
+    reactive_df(EQ_cache$filt.df)
+    original_df(EQ_cache$filt.df)
     # updateCheckboxInput(session, "counttype", selected = "waterbody")
 
-    updateSliderInput(session, "year", min = 1995, max = max_year, value = c(1995, max_year))
+    updateSliderInput(session, "year", min = 1995, max = EQ_cache$max_year, value = c(1995, EQ_cache$max_year))
 
     updateSelectInput(session, "region", selected = "")
 
@@ -349,6 +395,8 @@ server <- function(input, output, session) {
 
   # create reactive df to count waterbody and pollutant combinations
   wb_df <- reactive({
+    req(reactive_df())
+    
     df <- reactive_df() %>%
       dplyr::select(
         region, state, pollutant, pollutantGroup, assessmentUnitId,
@@ -361,6 +409,8 @@ server <- function(input, output, session) {
 
   # create reactive waterbody tally
   wbtally_df <- reactive({
+    req(wb_df())
+    
     df <- wb_df() %>%
       dplyr::group_by(state) %>%
       dplyr::arrange(state) %>%
@@ -371,6 +421,8 @@ server <- function(input, output, session) {
 
   # create output table for filtered (by user input) tmdls for 'Filtered TMDL Results' tab
   output$table <- renderDT({
+    req(reactive_df())
+    
     datatable(
       reactive_df() %>%
         dplyr::mutate(planSummaryLink = paste0('<a href="', planSummaryLink, '" target="_blank">', planSummaryLink, "</a>")) %>%
@@ -395,11 +447,15 @@ server <- function(input, output, session) {
 
   # date update
   output$update.tmdls <- renderText({
+    req(data_ready())
+    
     paste0(" Data last updated on ", update.tmdls, ".")
   })
 
   # tmdls version one
   output$tmdl1 <- renderText({
+    req(reactive_df())
+    
     count <- reactive_df() %>%
       dplyr::select(assessmentUnitId, pollutant, actionId) %>%
       dplyr::n_distinct() %>%
@@ -491,6 +547,8 @@ server <- function(input, output, session) {
 
   # create reactive df to count annual and cummulative tmdls
   count_df <- reactive({
+    req(reactive_df())
+    
     df <- reactive_df() %>%
       dplyr::select(state, fiscalYearEstablished, pollutant, assessmentUnitId, actionId) %>%
       dplyr::distinct() %>%
