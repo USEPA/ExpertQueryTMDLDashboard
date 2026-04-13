@@ -69,13 +69,13 @@ ui <- bslib::page_fluid(
     ),
     # create sidebar for user inputs
     sidebar = sidebar(
-      sliderInput("year", "Year:", min = 1975, max = EQ_cache$max_year, value = c(1975, EQ_cache$max_year), sep = ""),
-      selectInput("region", "Region:", choices = sort(unique(states_regions$region)), selected = NULL, multiple = TRUE),
-      selectInput("state", "State:", choices = sort(unique(states_regions$state)), selected = NULL, multiple = TRUE),
-      selectInput("pollgroup", "Pollutant Group:", choices = sort(unique(pollutants_groups$pollutantGroup)), selected = NULL, multiple = TRUE),
-      selectInput("pollutant", "Pollutant:", choices = sort(unique(pollutants_groups$pollutant)), selected = NULL, multiple = TRUE),
-      selectInput("addparam", "Addressed Parameter:", choices = sort(unique(parameters$addressedParameter)), selected = NULL, multiple = TRUE),
-      selectInput("actagency", "Action Agency:", choices = sort(unique(act_agencies)), selected = NULL, multiple = TRUE),
+      sliderInput("year", "Year:", min = 1975, max = lubridate::year(Sys.Date()), value = c(1975, lubridate::year(Sys.Date())), sep = ""),
+      selectInput("region", "Region:", choices = character(0), multiple = TRUE),
+      selectInput("state", "State:", choices = character(0), multiple = TRUE),
+      selectInput("pollgroup", "Pollutant Group:", choices = character(0), multiple = TRUE),
+      selectInput("pollutant", "Pollutant:", choices = character(0), multiple = TRUE),
+      selectInput("addparam", "Addressed Parameter:", choices = character(0), multiple = TRUE),
+      selectInput("actagency", "Action Agency:", choices = character(0), multiple = TRUE),
       actionButton("update", "Update"),
       actionButton("clear", "Clear")
     ),
@@ -243,34 +243,79 @@ ui <- bslib::page_fluid(
 
 
 # Server
-session$onFlushed(function() {
-  message("startup: onFlushed begin")
-  later::later(function() {
-    if (!isTRUE(EQ_cache$loaded)) {
-      message("startup: deferred load begin")
-      
-      path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
-      stopifnot(nzchar(path) && file.exists(path))
-      env <- new.env(parent = emptyenv())
-      load(path, envir = env)
-      list2env(as.list(env), envir = EQ_cache)
-      EQ_cache$loaded <- TRUE
-      
-      # Optional: compute max_year if it’s not in the .RData
-      if (is.null(EQ_cache$max_year) &&
-          !is.null(EQ_cache$filt.df) &&
-          "fiscalYearEstablished" %in% names(EQ_cache$filt.df)) {
-        EQ_cache$max_year <- max(EQ_cache$filt.df$fiscalYearEstablished, na.rm = TRUE)
+server <- function(input, output, session) {
+  # Reactive holders
+  data_ready  <- reactiveVal(FALSE)
+  reactive_df <- reactiveVal(NULL)
+  original_df <- reactiveVal(NULL)
+  
+  # Load your data once and initialize inputs when the session is ready
+  session$onFlushed(function() {
+    later::later(function() {
+      if (!isTRUE(EQ_cache$loaded)) {
+        message("startup: deferred load begin")
+        
+        # Adjust the path to where your file actually lives:
+        # If you moved it to inst/extdata:
+        # path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
+        # If it’s under inst/app/extdata:
+        # path <- file.path(pkg_app_dir, "extdata", "EQ_data.RData")
+        path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
+        
+        stopifnot(nzchar(path), file.exists(path))
+        env <- new.env(parent = emptyenv())
+        load(path, envir = env)
+        list2env(as.list(env), envir = EQ_cache)
+        
+        # If the .RData has a list like EQ_data with fields, unpack it:
+        if (exists("EQ_data", envir = EQ_cache) && is.list(EQ_cache$EQ_data)) {
+          list2env(EQ_cache$EQ_data, envir = EQ_cache)
+        }
+        
+        # Compute max_year if not provided
+        if (is.null(EQ_cache$max_year) &&
+            !is.null(EQ_cache$filt.df) &&
+            "fiscalYearEstablished" %in% names(EQ_cache$filt.df)) {
+          EQ_cache$max_year <- max(EQ_cache$filt.df$fiscalYearEstablished, na.rm = TRUE)
+        }
+        
+        # Initialize reactives
+        if (!is.null(EQ_cache$filt.df)) {
+          reactive_df(EQ_cache$filt.df)
+          original_df(EQ_cache$filt.df)
+        }
+        
+        EQ_cache$loaded <- TRUE
+        data_ready(TRUE)
+        message("startup: deferred load end")
+        
+        # Update inputs now that we have data
+        if (!is.null(EQ_cache$max_year) && is.finite(EQ_cache$max_year)) {
+          updateSliderInput(session, "year",
+                            min = 1975,
+                            max = EQ_cache$max_year,
+                            value = c(1975, EQ_cache$max_year)
+          )
+        }
+        if (!is.null(EQ_cache$states_regions)) {
+          updateSelectInput(session, "region", choices = sort(unique(EQ_cache$states_regions$region)))
+          updateSelectInput(session, "state",  choices = sort(unique(EQ_cache$states_regions$state)))
+        }
+        if (!is.null(EQ_cache$pollutants_groups)) {
+          updateSelectInput(session, "pollgroup", choices = sort(unique(EQ_cache$pollutants_groups$pollutantGroup)))
+          updateSelectInput(session, "pollutant", choices = sort(unique(EQ_cache$pollutants_groups$pollutant)))
+        }
+        if (!is.null(EQ_cache$parameters)) {
+          updateSelectInput(session, "addparam", choices = sort(unique(EQ_cache$parameters$addressedParameter)))
+        }
+        if (!is.null(EQ_cache$act_agencies)) {
+          updateSelectInput(session, "actagency", choices = sort(unique(EQ_cache$act_agencies)))
+        } else if (!is.null(EQ_cache$filt.df$actionAgency)) {
+          updateSelectInput(session, "actagency", choices = sort(unique(EQ_cache$filt.df$actionAgency)))
+        }
       }
-      
-      reactive_df(EQ_cache$filt.df)
-      original_df(EQ_cache$filt.df)
-      data_ready(TRUE)
-      message("startup: deferred load end")
-    }
-  }, delay = 0)  # schedule after the current response finishes
-  message("startup: onFlushed scheduled")
-}, once = TRUE)
+    }, delay = 0)
+  }, once = TRUE)
 
   # create dynamic filter so region selection will limit states available
   observe({
@@ -867,6 +912,7 @@ session$onFlushed(function() {
       )
     plot
   })
+}
 
 # Run the app
 shinyApp(ui = ui, server = server)
