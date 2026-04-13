@@ -13,7 +13,7 @@ jobs:
     env:
       # Try 4.3.3 first; if Connect still can't find 4.3.x, change to '4.2.3' and re-run.
       R_VERSION: '4.3.3'
-      # Fast Linux binaries via Posit Public Package Manager (jammy = ubuntu-latest)
+      # Fast binaries for Ubuntu jammy
       CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
     steps:
@@ -27,25 +27,24 @@ jobs:
         with:
           r-version: ${{ env.R_VERSION }}
 
-      - name: Install tools (renv, yaml, rsconnect)
+      - name: Install tools
         run: |
           Rscript - <<'RS'
           options(repos = c(CRAN = Sys.getenv('CRAN_REPO')))
-          install.packages(c('renv','yaml','rsconnect'))
+          install.packages(c('renv','yaml','rsconnect','jsonlite'))
           RS
 
-      # Optional pins to keep packages compatible with R 4.3.x
-      - name: Pin versions compatible with R ${{ env.R_VERSION }}
+      # Optional: pin versions compatible with R 4.3.x
+      - name: Pin packages for R ${{ env.R_VERSION }}
         run: |
           Rscript - <<'RS'
-          # Only needed if you hit pkg-requires-R>=4.4 errors:
-          try(renv::record(list(renv = '1.2.1')), silent = TRUE)
-          try(renv::record(list(Matrix = '1.6-5')), silent = TRUE)  # Matrix >= 1.7 needs R >= 4.4
-          # Add more pins here if needed, e.g.:
+          # Matrix >= 1.7 requires R >= 4.4; pin to last 4.3-compatible
+          try(renv::record(list(Matrix = '1.6-5')), silent = TRUE)
+          # Add more pins if CI reports other R>=4.4 requirements, e.g.:
           # try(renv::record(list(DiagrammeR = '1.0.11', igraph = '1.5.1')), silent = TRUE)
           RS
 
-      - name: Install project dependencies (ignore old lockfile)
+      - name: Install project dependencies (ignore any lockfile)
         env:
           RENV_CONFIG_IGNORE_LOCKFILE: true
         run: |
@@ -54,20 +53,26 @@ jobs:
           deps <- renv::dependencies(progress = FALSE)
           pkgs <- unique(na.omit(deps$Package))
           base <- rownames(installed.packages(priority = 'base'))
-          pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))  # exclude base and your own package if present
+          pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))  # exclude base + your own package if present
           for (p in pkgs) {
             message('Installing ', p, ' ...')
             try(renv::install(p), silent = TRUE)
           }
           RS
 
-      - name: Write manifest into the app directory and show R version
+      - name: Write manifest into app directory and show R version
         run: |
           Rscript - <<'RS'
           appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
+
+          # Temporarily remove any renv.lock so writeManifest doesn't try to parse it
+          lf <- file.path(appdir, 'renv.lock')
+          if (file.exists(lf)) file.rename(lf, paste0(lf, '.bak'))
+
           rsconnect::writeManifest(appDir = appdir, force = TRUE)
+
           man <- jsonlite::read_json(file.path(appdir, 'manifest.json'))
-          rv <- man$metadata$rVersion %||% man$r$version %||% 'unknown'
+          rv <- man$metadata$rVersion %||% (man$r$version %||% 'unknown')
           cat('Manifest R version:', rv, '\n')
           RS
 
