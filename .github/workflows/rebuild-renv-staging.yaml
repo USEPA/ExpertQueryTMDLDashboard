@@ -11,8 +11,8 @@ jobs:
     permissions:
       contents: write
     env:
-      # Target R; try 4.3.3 first. If Connect still says 4.3.x not found, change to '4.2.3'.
-      R_VERSION: '4.5.3'
+      # Target R
+      R_VERSION: '4.1.0'
       # Fast binaries via Posit Public Package Manager (jammy = ubuntu-latest)
       RENV_CONFIG_REPOS_OVERRIDE: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
