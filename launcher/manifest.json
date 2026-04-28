@@ -251,7 +251,7 @@
         "Authors@R": "\n    person(\"Hillary\", \"Marler\", , \"Marler.Hillary@epa.gov\", role = c(\"aut\", \"cre\"))",
         "Description": "The Expert Query TMDL Dashboard is an R Shiny application\n    designed to summarize and count TMDLs based on user-selected filters\n    (state, region, pollutant, year, addressed parameter). TMDL data from\n    ATTAINS are downloaded via Expert Query web services and are refreshed\n    weekly.",
         "License": "CC0 + file LICENSE",
-        "Imports": "bsicons, bslib, DiagrammeR, dplyr (>= 1.1.0), DT, ggplot2,\nhtmlwidgets, httr2, jsonlite, lubridate (>= 1.5.0), plotly,\nrExpertQuery, scales, shiny, shinyjs, shinythemes",
+        "Imports": "bsicons, bslib, DiagrammeR, dplyr (>= 1.1.0), DT, ggplot2,\nhtmlwidgets, httr2, jsonlite, lubridate (>= 1.5.0), plotly,\nscales, shiny, shinyjs, shinythemes",
         "Remotes": "USEPA/rExpertQuery@develop",
         "Encoding": "UTF-8",
         "Roxygen": "list(markdown = TRUE, load = \"installed\")",
@@ -261,17 +261,17 @@
         "RemoteHost": "api.github.com",
         "RemoteRepo": "TMDLDash",
         "RemoteUsername": "USEPA",
-        "RemoteRef": "HEAD",
-        "RemoteSha": "c67db82a915c6b2dbc022d9822d19d923f7a3f60",
+        "RemoteRef": "staging",
+        "RemoteSha": "d9595786985b2aeeffc6202dc58421bee441af49",
         "GithubRepo": "TMDLDash",
         "GithubUsername": "USEPA",
-        "GithubRef": "HEAD",
-        "GithubSHA1": "c67db82a915c6b2dbc022d9822d19d923f7a3f60",
+        "GithubRef": "staging",
+        "GithubSHA1": "d9595786985b2aeeffc6202dc58421bee441af49",
         "NeedsCompilation": "no",
-        "Packaged": "2026-04-28 14:47:42 UTC; HMARLER",
+        "Packaged": "2026-04-28 14:55:21 UTC; HMARLER",
         "Author": "Hillary Marler [aut, cre]",
         "Maintainer": "Hillary Marler <Marler.Hillary@epa.gov>",
-        "Built": "R 4.5.3; ; 2026-04-28 14:47:45 UTC; windows"
+        "Built": "R 4.5.3; ; 2026-04-28 14:55:29 UTC; windows"
       }
     },
     "askpass": {
@@ -2113,44 +2113,6 @@
         "Archs": "x64"
       }
     },
-    "rExpertQuery": {
-      "Source": "github",
-      "Repository": null,
-      "description": {
-        "Package": "rExpertQuery",
-        "Type": "Package",
-        "Title": "R Tools for Expert Query",
-        "Version": "0.1.0",
-        "Authors@R": "\n  person(given = \"Hillary\",\n           family = \"Marler\",\n           role = c(\"aut\", \"cre\"),\n           email = \"marler.hillary@epa.gov\",\n           comment = c(ORCID = \"0009-0006-0323-1172\"))",
-        "Description": "Access ATTAINS data efficiently via Expert Query web services.",
-        "License": "CC0",
-        "Copyright": "This software is in the public domain because it contains\nmaterials that originally came from the U.S. Environmental\nProtection Agency.",
-        "Encoding": "UTF-8",
-        "Roxygen": "list(markdown = TRUE)",
-        "RoxygenNote": "7.3.3",
-        "Imports": "data.table, dplyr, httr2, jsonlite, lubridate, purrr, readr,\nrlang, tibble, tidyr, utils",
-        "Suggests": "datasets, devtools, DT, ggplot2, httr, knitr, leaflet, maps,\npkgdown, plotly, rmarkdown, remotes, roxygen2, sf, spelling,\nstringi, testthis, testthat (>= 3.0.0), usdata, usethis, usmap,\nyaml",
-        "Depends": "R (>= 4.1.0)",
-        "VignetteBuilder": "knitr, rmarkdown",
-        "Config/testthat/edition": "3",
-        "URL": "https://usepa.github.io/rExpertQuery/",
-        "RemoteType": "github",
-        "RemoteHost": "api.github.com",
-        "RemoteRepo": "rExpertQuery",
-        "RemoteUsername": "USEPA",
-        "RemoteRef": "develop",
-        "RemoteSha": "2b3ec28bc5da3b399a188441b3903ffb6b9b8b9d",
-        "GithubRepo": "rExpertQuery",
-        "GithubUsername": "USEPA",
-        "GithubRef": "develop",
-        "GithubSHA1": "2b3ec28bc5da3b399a188441b3903ffb6b9b8b9d",
-        "NeedsCompilation": "no",
-        "Packaged": "2026-04-27 18:18:32 UTC; HMARLER",
-        "Author": "Hillary Marler [aut, cre] (ORCID:\n    <https://orcid.org/0009-0006-0323-1172>)",
-        "Maintainer": "Hillary Marler <marler.hillary@epa.gov>",
-        "Built": "R 4.5.3; ; 2026-04-27 18:18:54 UTC; windows"
-      }
-    },
     "rappdirs": {
       "Source": "CRAN",
       "Repository": "https://cran.rstudio.com",
@@ -3119,7 +3081,7 @@
   },
   "files": {
     ".Rprofile": {
-      "checksum": "b97e0c4d2f5b6110364b96577892231e"
+      "checksum": "6ea24e69a8d93c964f4600a4edaf9e9d"
     },
     "app.R": {
       "checksum": "dc3e1220271536adb45f6690a50fe9f1"
