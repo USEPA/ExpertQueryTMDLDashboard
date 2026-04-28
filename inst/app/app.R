@@ -283,6 +283,7 @@ server <- function(input, output, session) {
         if (!is.null(EQ_cache$filt.df)) {
           reactive_df(EQ_cache$filt.df)
           original_df(EQ_cache$filt.df)
+          update.tmdls(EQ_cache$update.tmdls)
         }
         
         EQ_cache$loaded <- TRUE
