@@ -4,7 +4,7 @@
 [![R-CMD-check](https://github.com/USEPA/ExpertQueryTMDLDashboard/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/USEPA/ExpertQueryTMDLDashboard/actions/workflows/R-CMD-check.yaml)
 
 The ExpertQueryTMDLDashboard is an R Shiny application designed to summarize and 
-count TMDLS based on user inputs to filters on various fields including state, region, 
+count TMDLs based on user inputs to filters on various fields including state, region, 
 pollutant, year, and addressed parameter. TMDL data from ATTAINS are downloaded via
 Expert Query web services and are refreshed weekly.
 
