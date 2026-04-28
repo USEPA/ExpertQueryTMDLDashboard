@@ -283,7 +283,6 @@ server <- function(input, output, session) {
         if (!is.null(EQ_cache$filt.df)) {
           reactive_df(EQ_cache$filt.df)
           original_df(EQ_cache$filt.df)
-          update.tmdls(EQ_cache$update.tmdls)
         }
         
         EQ_cache$loaded <- TRUE
@@ -498,7 +497,7 @@ server <- function(input, output, session) {
   output$update.tmdls <- renderText({
     req(data_ready())
     
-    paste0(" Data last updated on ", update.tmdls, ".")
+    paste0(" Data last updated on ", EQ_cache$update.tmdls, ".")
   })
 
   # tmdls version one
