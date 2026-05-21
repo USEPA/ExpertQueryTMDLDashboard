@@ -255,25 +255,12 @@ server <- function(input, output, session) {
       if (!isTRUE(EQ_cache$loaded)) {
         message("startup: deferred load begin")
         
-        # Adjust the path to where your file actually lives:
-        # If you moved it to inst/extdata:
-        # path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
-        # If it’s under inst/app/extdata:
-        # path <- file.path(pkg_app_dir, "extdata", "EQ_data.RData")
         path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
-        
         stopifnot(nzchar(path), file.exists(path))
-        env <- new.env(parent = emptyenv())
-        load(path, envir = env)
-        
-        message("TMDLDash version: ", as.character(utils::packageVersion("TMDLDash")))
-        message("EQ_data path: ", path, " exists? ", file.exists(path))
         tmp <- new.env(parent = emptyenv())
         objs <- load(path, envir = tmp)
-        message("Objects in EQ_data.RData: ", paste(objs, collapse = ", "))
-        if (!"parameters" %in% objs) stop("EQ_data.RData does not contain an object named 'parameters'")
-        
-        #list2env(as.list(env), envir = EQ_cache)
+        message("EQ_data.RData contains: ", paste(objs, collapse = ", "))
+        stopifnot("parameters" %in% objs)
         list2env(as.list(tmp), envir = EQ_cache)
         
         # If the .RData has a list like EQ_data with fields, unpack it:
