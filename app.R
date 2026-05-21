@@ -1,5 +1,6 @@
 library(TMDLDash)
 
+# loader function
 message("Launcher starting at: ", Sys.time())
 app <- tryCatch(
   TMDLDash::run_app(),
