@@ -407,7 +407,7 @@ server <- function(input, output, session) {
     }
 
     if (!is.null(input$addparam) && length(input$addparam) > 0) {
-      params <- parameters %>%
+      params <- EQ_cache$parameters %>%
         dplyr::filter(addressedParameter %in% input$addparam)
 
       temp_df <- temp_df[temp_df$addressedParameters %in% params$addressedParameters, ]
