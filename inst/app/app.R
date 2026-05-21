@@ -265,7 +265,16 @@ server <- function(input, output, session) {
         stopifnot(nzchar(path), file.exists(path))
         env <- new.env(parent = emptyenv())
         load(path, envir = env)
-        list2env(as.list(env), envir = EQ_cache)
+        
+        message("TMDLDash version: ", as.character(utils::packageVersion("TMDLDash")))
+        message("EQ_data path: ", path, " exists? ", file.exists(path))
+        tmp <- new.env(parent = emptyenv())
+        objs <- load(path, envir = tmp)
+        message("Objects in EQ_data.RData: ", paste(objs, collapse = ", "))
+        if (!"parameters" %in% objs) stop("EQ_data.RData does not contain an object named 'parameters'")
+        
+        #list2env(as.list(env), envir = EQ_cache)
+        list2env(as.list(tmp), envir = EQ_cache)
         
         # If the .RData has a list like EQ_data with fields, unpack it:
         if (exists("EQ_data", envir = EQ_cache) && is.list(EQ_cache$EQ_data)) {
