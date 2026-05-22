@@ -1,6 +1,6 @@
 Package: TMDLDash
 Title: Expert Query TMDL Dashboard
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: 
     person("Hillary", "Marler", , "Marler.Hillary@epa.gov", role = c("aut", "cre"))
 Description: The Expert Query TMDL Dashboard is an R Shiny application
