@@ -8,6 +8,22 @@ library(scales)
 library(shiny)
 library(shinyjs)
 library(shinythemes)
+library(htmltools)
+
+# Resolve app and www dirs as above (APP_DIR, www_path)
+dep_header <- htmlDependency(
+  name = "tmdl-header",
+  version = "1.0.0",
+  src = c(file = www_path),
+  stylesheet = c("styles.css"),        # add more if needed
+  script     = c()                     # e.g., "script.js"
+)
+
+# Read header markup and attach the dependency so its CSS/JS load automatically
+header_html <- HTML(readChar(file.path(APP_DIR, "header.html"),
+                             file.info(file.path(APP_DIR, "header.html"))$size))
+
+header_html <- attachDependencies(header_html, dep_header)
 
 # Resolve the installed app directory (works for installed package and dev)
 pkg_app_dir <- getOption(
