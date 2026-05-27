@@ -4355,19 +4355,19 @@
       "checksum": "739797b81d7ee03ca368ec5775457954"
     },
     "inst/app/www/RMD_data.RData": {
-      "checksum": "90295b3122214616a0b6c28b1977d9d4"
+      "checksum": "cee76b922d33bb0e6aa860d0533fd4e4"
     },
     "inst/app/www/styles.css": {
       "checksum": "be55aeab402ac65e669a23f7cb81c792"
     },
     "inst/extdata/EQ_data.RData": {
-      "checksum": "0ddda236a906a01c476517dd567c9c5d"
+      "checksum": "b344641733bb421d805fdccd9d54b4e7"
     },
     "inst/extdata/importEQdata.R": {
       "checksum": "f9bbc44254eec399d54ca74f5e6b0746"
     },
     "launcher/.Rprofile": {
-      "checksum": "630b255a85a868121e62c33245b9c6e4"
+      "checksum": "ed388a652f3e1d1c9895bf76c0b13b0b"
     },
     "launcher/app.R": {
       "checksum": "dc3e1220271536adb45f6690a50fe9f1"
