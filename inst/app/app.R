@@ -10,57 +10,52 @@ library(shinyjs)
 library(shinythemes)
 library(htmltools)
 
-# Resolve app and www dirs as above (APP_DIR, www_path)
-dep_header <- htmlDependency(
-  name = "tmdl-header",
-  version = "1.0.0",
-  src = c(file = www_path),
-  stylesheet = c("styles.css"),        # add more if needed
-  script     = c()                     # e.g., "script.js"
-)
-
-# Read header markup and attach the dependency so its CSS/JS load automatically
-header_html <- HTML(readChar(file.path(APP_DIR, "header.html"),
-                             file.info(file.path(APP_DIR, "header.html"))$size))
-
-header_html <- attachDependencies(header_html, dep_header)
-
-# Resolve the installed app directory (works for installed package and dev)
-pkg_app_dir <- getOption(
-  "TMDLDash.app_dir",
-  default = tryCatch(
-    system.file("app", package = "TMDLDash"),
-    error = function(e) ""
-  )
-)
-
+# Resolve the installed app directory (package mode) or repo path (plain mode)
+pkg_app_dir <- tryCatch(system.file("app", package = "TMDLDash"), error = function(e) "")
 if (!nzchar(pkg_app_dir) || !dir.exists(pkg_app_dir)) {
-  # Fallbacks for development (e.g., devtools::load_all(), running from source)
-  pkg_path <- tryCatch(getNamespaceInfo("TMDLDash", "path"), error = function(e) "")
-  candidates <- c(
-    file.path(pkg_path, "inst", "app"),
-    file.path(getwd(),  "inst", "app")
-  )
-  pkg_app_dir <- candidates[dir.exists(candidates)][1]
+  # Plain Shiny (running from repo)
+  pkg_app_dir <- normalizePath(file.path(getwd(), "inst", "app"), mustWork = TRUE)
+}
+APP_DIR <- pkg_app_dir
+
+# Helper to build absolute paths inside the app dir
+app_sys <- function(...) file.path(APP_DIR, ...)
+
+# Register www static resources so you can reference them in href/src
+www_path <- app_sys("www")
+if (dir.exists(www_path)) {
+  shiny::addResourcePath("appwww", www_path)
 }
 
-if (!nzchar(pkg_app_dir) || !dir.exists(pkg_app_dir)) {
-  stop("pkg_app_dir could not be determined; ensure inst/app exists and run_app() sets TMDLDash.app_dir.")
+# Optional diagnostics during testing
+message("APP_DIR: ", APP_DIR)
+message("www exists? ", dir.exists(www_path))
+
+# Ensure a cache env exists
+if (!exists("EQ_cache", inherits = FALSE)) EQ_cache <- new.env(parent = emptyenv())
+
+# Load EQ_data.RData with a plain-mode fallback
+load_eq_data <- function() {
+  p <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
+  if (!nzchar(p) || !file.exists(p)) {
+    p <- file.path(getwd(), "inst", "extdata", "EQ_data.RData")  # plain mode
+  }
+  if (!file.exists(p)) stop("EQ_data.RData not found at: ", p)
+  tmp <- new.env(parent = emptyenv())
+  objs <- load(p, envir = tmp)
+  message("Loaded ", basename(p), " objects: ", paste(objs, collapse = ", "))
+  list2env(as.list(tmp), envir = EQ_cache)
+  EQ_cache$loaded <- TRUE
 }
+load_eq_data()
 
-options(shiny.fullstacktrace = TRUE)
-message("App init start: ", Sys.time())
-message("pkg_app_dir: ", pkg_app_dir)
-
-# Per-process cache for large data (shared across sessions in this R worker)
-EQ_cache <- new.env(parent = emptyenv())
 # UI
 ui <- bslib::page_fluid(
   theme = bslib::bs_theme(version = 5),            # or 4 if you used BS4 classes
   # Load your app-local CSS from www/
-  tags$head(tags$link(rel = "stylesheet", href = "styles.css")),
+  tags$head(tags$link(rel = "stylesheet", href = "appwww/styles.css")),
   # If header.html is just a banner fragment
-  shiny::includeHTML("header.html"),               # make sure it has no <html>/<head>/<body>
+  shiny::includeHTML(app_sys("header.html")),               # make sure it has no <html>/<head>/<body>
   page_sidebar(
     # url options
     tags$head(
@@ -254,7 +249,7 @@ ui <- bslib::page_fluid(
       )
     )
   ),
-  shiny::includeHTML("footer.html")
+  shiny::includeHTML(app_sys("footer.html"))
 )
 
 
@@ -268,67 +263,66 @@ server <- function(input, output, session) {
   # Load your data once and initialize inputs when the session is ready
   session$onFlushed(function() {
     later::later(function() {
+      # If a previous process already loaded the data, reuse it; otherwise load now
       if (!isTRUE(EQ_cache$loaded)) {
-        message("startup: deferred load begin")
-        
-        path <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
-        stopifnot(nzchar(path), file.exists(path))
-        tmp <- new.env(parent = emptyenv())
-        objs <- load(path, envir = tmp)
-        message("EQ_data.RData contains: ", paste(objs, collapse = ", "))
-        stopifnot("parameters" %in% objs)
-        list2env(as.list(tmp), envir = EQ_cache)
-        
-        # If the .RData has a list like EQ_data with fields, unpack it:
-        if (exists("EQ_data", envir = EQ_cache) && is.list(EQ_cache$EQ_data)) {
-          list2env(EQ_cache$EQ_data, envir = EQ_cache)
-        }
-        
-        # Compute max_year if not provided
-        if (is.null(EQ_cache$max_year) &&
-            !is.null(EQ_cache$filt.df) &&
-            "fiscalYearEstablished" %in% names(EQ_cache$filt.df)) {
-          EQ_cache$max_year <- max(EQ_cache$filt.df$fiscalYearEstablished, na.rm = TRUE)
-        }
-        
-        # Initialize reactives
-        if (!is.null(EQ_cache$filt.df)) {
-          reactive_df(EQ_cache$filt.df)
-          original_df(EQ_cache$filt.df)
-        }
-        
-        EQ_cache$loaded <- TRUE
-        data_ready(TRUE)
-        message("startup: deferred load end")
-        
-        # Update inputs now that we have data
-        if (!is.null(EQ_cache$max_year) && is.finite(EQ_cache$max_year)) {
-          updateSliderInput(session, "year",
-                            min = 1975,
-                            max = EQ_cache$max_year,
-                            value = c(1975, EQ_cache$max_year)
-          )
-        }
-        if (!is.null(EQ_cache$states_regions)) {
-          updateSelectInput(session, "region", choices = sort(unique(EQ_cache$states_regions$region)))
-          updateSelectInput(session, "state",  choices = sort(unique(EQ_cache$states_regions$state)))
-        }
-        if (!is.null(EQ_cache$pollutants_groups)) {
-          updateSelectInput(session, "pollgroup", choices = sort(unique(EQ_cache$pollutants_groups$pollutantGroup)))
-          updateSelectInput(session, "pollutant", choices = sort(unique(EQ_cache$pollutants_groups$pollutant)))
-        }
-        if (!is.null(EQ_cache$parameters)) {
-          updateSelectInput(session, "addparam", choices = sort(unique(EQ_cache$parameters$addressedParameter)))
-        }
-        if (!is.null(EQ_cache$act_agencies)) {
-          updateSelectInput(session, "actagency", choices = sort(unique(EQ_cache$act_agencies)))
-        } else if (!is.null(EQ_cache$filt.df$actionAgency)) {
-          updateSelectInput(session, "actagency", choices = sort(unique(EQ_cache$filt.df$actionAgency)))
-        }
+        # load_eq_data() has the plain-mode fallback and logs what it loads
+        load_eq_data()
+      } else {
+        message("EQ_data already loaded in this R process; using cache")
+      }
+      
+      # Optional: sanity check 'parameters' is present
+      if (!exists("parameters", envir = EQ_cache, inherits = FALSE)) {
+        stop("Object 'parameters' not found in EQ_cache after loading EQ_data.RData")
+      }
+      
+      # If the .RData has a list like EQ_data with fields, unpack it:
+      if (exists("EQ_data", envir = EQ_cache) && is.list(EQ_cache$EQ_data)) {
+        list2env(EQ_cache$EQ_data, envir = EQ_cache)
+      }
+      
+      # Compute max_year if not provided
+      if (is.null(EQ_cache$max_year) &&
+          !is.null(EQ_cache$filt.df) &&
+          "fiscalYearEstablished" %in% names(EQ_cache$filt.df)) {
+        EQ_cache$max_year <- max(EQ_cache$filt.df$fiscalYearEstablished, na.rm = TRUE)
+      }
+      
+      # Initialize reactives
+      if (!is.null(EQ_cache$filt.df)) {
+        reactive_df(EQ_cache$filt.df)
+        original_df(EQ_cache$filt.df)
+      }
+      
+      data_ready(TRUE)
+      message("startup: deferred load end")
+      
+      # Update inputs now that we have data
+      if (!is.null(EQ_cache$max_year) && is.finite(EQ_cache$max_year)) {
+        updateSliderInput(session, "year",
+                          min = 1975,
+                          max = EQ_cache$max_year,
+                          value = c(1975, EQ_cache$max_year))
+      }
+      if (!is.null(EQ_cache$states_regions)) {
+        updateSelectInput(session, "region", choices = sort(unique(EQ_cache$states_regions$region)))
+        updateSelectInput(session, "state",  choices = sort(unique(EQ_cache$states_regions$state)))
+      }
+      if (!is.null(EQ_cache$pollutants_groups)) {
+        updateSelectInput(session, "pollgroup", choices = sort(unique(EQ_cache$pollutants_groups$pollutantGroup)))
+        updateSelectInput(session, "pollutant", choices = sort(unique(EQ_cache$pollutants_groups$pollutant)))
+      }
+      if (!is.null(EQ_cache$parameters)) {
+        updateSelectInput(session, "addparam", choices = sort(unique(EQ_cache$parameters$addressedParameter)))
+      }
+      if (!is.null(EQ_cache$act_agencies)) {
+        updateSelectInput(session, "actagency", choices = sort(unique(EQ_cache$act_agencies)))
+      } else if (!is.null(EQ_cache$filt.df$actionAgency)) {
+        updateSelectInput(session, "actagency", choices = sort(unique(EQ_cache$filt.df$actionAgency)))
       }
     }, delay = 0)
   }, once = TRUE)
-
+  
   # create dynamic filter so region selection will limit states available
   observe({
     req(data_ready())  # wait for data to load
