@@ -47,9 +47,8 @@ load_eq_data <- function() {
   tmp <- new.env(parent = emptyenv())
   objs <- load(p, envir = tmp)
   
-  # Helpful diagnostics while you confirm on Connect
+  # Temporary diagnostics to confirm on Connect
   message("EQ_data path used: ", p)
-  message("EQ_data mtime: ", tryCatch(as.character(file.info(p)$mtime), error = function(e) NA))
   message("Loaded objects: ", paste(objs, collapse = ", "))
   if (!"parameters" %in% objs) stop("Object 'parameters' not found in EQ_data.RData")
   
