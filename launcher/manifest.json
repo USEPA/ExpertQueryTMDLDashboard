@@ -244,17 +244,31 @@
       "description": {
         "Package": "TMDLDash",
         "Title": "Expert Query TMDL Dashboard",
-        "Version": "0.1.2",
-        "Authors@R": "person(\"Hillary\", \"Marler\", , \"Marler.Hillary@epa.gov\", role = c(\"aut\", \"cre\"))",
-        "Description": "The Expert Query TMDL Dashboard is an R Shiny application\ndesigned to summarize and count TMDLs based on user-selected filters\n(state, region, pollutant, year, addressed parameter). TMDL data from\nATTAINS are downloaded via Expert Query web services and are refreshed\nweekly.",
+        "Version": "0.1.1",
+        "Authors@R": "\n    person(\"Hillary\", \"Marler\", , \"Marler.Hillary@epa.gov\", role = c(\"aut\", \"cre\"))",
+        "Description": "The Expert Query TMDL Dashboard is an R Shiny application\n    designed to summarize and count TMDLs based on user-selected filters\n    (state, region, pollutant, year, addressed parameter). TMDL data from\n    ATTAINS are downloaded via Expert Query web services and are refreshed\n    weekly.",
         "License": "CC0 + file LICENSE",
-        "Imports": "bsicons,\nbslib,\nDiagrammeR,\ndplyr (>= 1.1.0),\nDT,\nggplot2,\nhtmlwidgets,\nhttr2,\njsonlite,\nlubridate (>= 1.5.0),\nplotly,\nscales,\nshiny,\nshinyjs,\nshinythemes",
+        "Imports": "bsicons, bslib, DiagrammeR, dplyr (>= 1.1.0), DT, ggplot2,\nhtmlwidgets, httr2, jsonlite, lubridate (>= 1.5.0), plotly,\nscales, shiny, shinyjs, shinythemes",
         "Remotes": "USEPA/rExpertQuery@develop",
         "Encoding": "UTF-8",
         "Roxygen": "list(markdown = TRUE, load = \"installed\")",
         "RoxygenNote": "7.3.3",
         "Depends": "R (>= 4.3.0)",
-        "LazyData": "true"
+        "RemoteType": "github",
+        "RemoteHost": "api.github.com",
+        "RemoteRepo": "TMDLDash",
+        "RemoteUsername": "USEPA",
+        "RemoteRef": "staging",
+        "RemoteSha": "eae9434db6cdc839195066ec8f7913156d4576c3",
+        "GithubRepo": "TMDLDash",
+        "GithubUsername": "USEPA",
+        "GithubRef": "staging",
+        "GithubSHA1": "eae9434db6cdc839195066ec8f7913156d4576c3",
+        "NeedsCompilation": "no",
+        "Packaged": "2026-05-27 17:01:23 UTC; HMARLER",
+        "Author": "Hillary Marler [aut, cre]",
+        "Maintainer": "Hillary Marler <Marler.Hillary@epa.gov>",
+        "Built": "R 4.5.3; ; 2026-05-27 17:01:29 UTC; windows"
       }
     },
     "askpass": {
@@ -3064,7 +3078,7 @@
   },
   "files": {
     ".Rprofile": {
-      "checksum": "f9db985295b4be6bc516bf842a922cf7"
+      "checksum": "27e04029ccccb967426f4749e54b35fc"
     },
     "app.R": {
       "checksum": "e8dda835aef1a0e8374bd605f34dd581"
