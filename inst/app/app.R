@@ -36,14 +36,23 @@ if (!exists("EQ_cache", inherits = FALSE)) EQ_cache <- new.env(parent = emptyenv
 
 # Load EQ_data.RData with a plain-mode fallback
 load_eq_data <- function() {
-  p <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
-  if (!nzchar(p) || !file.exists(p)) {
-    p <- file.path(getwd(), "inst", "extdata", "EQ_data.RData")  # plain mode
+  # Plain mode (repo) first
+  p <- file.path(getwd(), "inst", "extdata", "EQ_data.RData")
+  if (!file.exists(p)) {
+    # Package mode fallback
+    p <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
   }
-  if (!file.exists(p)) stop("EQ_data.RData not found at: ", p)
+  if (!nzchar(p) || !file.exists(p)) stop("EQ_data.RData not found at: ", p)
+  
   tmp <- new.env(parent = emptyenv())
   objs <- load(p, envir = tmp)
-  message("Loaded ", basename(p), " objects: ", paste(objs, collapse = ", "))
+  
+  # Helpful diagnostics while you confirm on Connect
+  message("EQ_data path used: ", p)
+  message("EQ_data mtime: ", tryCatch(as.character(file.info(p)$mtime), error = function(e) NA))
+  message("Loaded objects: ", paste(objs, collapse = ", "))
+  if (!"parameters" %in% objs) stop("Object 'parameters' not found in EQ_data.RData")
+  
   list2env(as.list(tmp), envir = EQ_cache)
   EQ_cache$loaded <- TRUE
 }
