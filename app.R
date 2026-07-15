@@ -1,13 +1,12 @@
-library(TMDLDash)
+# app.R (repo root)
 
-message("Launcher starting at: ", Sys.time())
-app <- tryCatch(
-  TMDLDash::run_app(),
-  error = function(e) {
-    message("run_app() failed: ", conditionMessage(e))
-    traceback(2)
-    stop(e)
+local({
+  # Make any helpers in R/ available when running from source
+  rdir <- file.path(getwd(), "R")
+  if (dir.exists(rdir)) {
+    rfiles <- list.files(rdir, pattern = "\\.[Rr]$", full.names = TRUE)
+    lapply(rfiles, sys.source, envir = environment())
   }
-)
-message("Launcher handing app to Shiny at: ", Sys.time())
-app
+  # Run the actual app (your real app lives in inst/app/app.R)
+  source(file.path("inst", "app", "app.R"), local = TRUE)$value
+})

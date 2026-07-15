@@ -1,0 +1,111 @@
+name: Write manifest for Posit Connect (staging)
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["render-rmarkdown"]
+    types:
+      - completed
+
+jobs:
+  write-manifest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      R_VERSION: '4.1.0'
+      CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
+      RENV_CONFIG_AUTOLOADER_ENABLED: 'false'
+
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v4
+        with:
+          ref: staging
+
+- name: Setup R ${{ env.R_VERSION }}
+uses: r-lib/actions/setup-r@v2
+with:
+  r-version: ${{ env.R_VERSION }}
+
+- name: Ensure base tools (renv, rsconnect, yaml, jsonlite)
+run: |
+  Rscript - <<'RS'
+repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
+need <- c('renv','rsconnect','yaml','jsonlite')
+miss <- need[!vapply(need, requireNamespace, logical(1), quietly = TRUE)]
+if (length(miss)) install.packages(miss, repos = repo)
+RS
+# Optional: pin packages compatible with R 4.3.x
+- name: Pin packages for R ${{ env.R_VERSION }}
+run: |
+  Rscript - <<'RS'
+if (!requireNamespace('renv', quietly = TRUE)) {
+  install.packages('renv', repos = Sys.getenv('CRAN_REPO'))
+}
+RS
+- name: Install project dependencies from app directory (skip TMDLDash)
+env:
+  RENV_CONFIG_IGNORE_LOCKFILE: true
+run: |
+  Rscript - <<'RS'
+repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
+if (!requireNamespace('renv', quietly = TRUE)) {
+  install.packages('renv', repos = repo)
+}
+# Detect app directory (inst/app if present, otherwise repo root)
+appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
+# Discover dependencies in the app directory
+deps <- renv::dependencies(path = appdir, progress = FALSE)
+pkgs <- unique(na.omit(deps$Package))
+# Exclude base packages and TMDLDash (do not install it in Option A)
+base <- rownames(installed.packages(priority = 'base'))
+cran_pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))
+# Install remaining deps from CRAN/PPM
+if (length(cran_pkgs)) {
+  for (p in cran_pkgs) {
+    message('Installing ', p, ' ...')
+    try(renv::install(p), silent = TRUE)
+  }
+}
+RS
+# Optional safety check: fail if the app references TMDLDash
+- name: Ensure app does not reference TMDLDash
+shell: bash
+run: |
+  APPDIR="inst/app"
+[ -d "$APPDIR" ] || APPDIR="."
+if grep -R --include="*.R" -nE "library\\(TMDLDash\\)|TMDLDash::" "$APPDIR"; then
+echo "Found references to TMDLDash in app code. Remove them for Option A (or use Option B with a PAT)."
+exit 1
+fi
+- name: Write manifest into app directory and show R version
+run: |
+  Rscript - <<'RS'
+repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
+if (!requireNamespace('rsconnect', quietly = TRUE)) {
+  install.packages('rsconnect', repos = repo)
+}
+if (!requireNamespace('jsonlite', quietly = TRUE)) {
+  install.packages('jsonlite', repos = repo)
+}
+appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
+# Temporarily move renv.lock so writeManifest does not parse it
+lf <- file.path(appdir, 'renv.lock')
+if (file.exists(lf)) file.rename(lf, paste0(lf, '.bak'))
+rsconnect::writeManifest(appDir = appdir, force = TRUE)
+man_path <- file.path(appdir, 'manifest.json')
+man <- jsonlite::read_json(man_path, simplifyVector = TRUE)
+rv <- 'unknown'
+if (!is.null(man$metadata) && !is.null(man$metadata$rVersion)) rv <- man$metadata$rVersion
+if (!is.null(man$r) && !is.null(man$r$version)) rv <- man$r$version
+cat('Manifest R version:', rv, '\n')
+RS
+- name: Commit manifest.json to staging
+run: |
+  git config user.name "github-actions[bot]"
+git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+git add inst/app/manifest.json manifest.json || true
+git commit -m "Add manifest.json generated under R ${{ env.R_VERSION }} (staging)" || echo "No changes to commit"
+git push origin HEAD:staging
