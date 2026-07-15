@@ -1,32 +1,28 @@
 name: Write manifest for Posit Connect (staging)
 
 on:
-  push:
-  branches: [ staging ]
   workflow_dispatch:
   workflow_run:
     workflows: ["render-rmarkdown"]
     types:
       - completed
-  
-  jobs:
-  write-manifest:
-  runs-on: ubuntu-latest
-permissions:
-  contents: write
-env:
-  #R version
-  R_VERSION: '4.1.0'
-# Fast binaries for Ubuntu jammy (ubuntu-latest)
-CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
-# Prevent renv autoloader from interfering in CI
-RENV_CONFIG_AUTOLOADER_ENABLED: 'false'
 
-steps:
-  - name: Checkout staging
-uses: actions/checkout@v4
-with:
-  ref: staging
+jobs:
+  write-manifest:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    env:
+      R_VERSION: '4.1.0'
+      CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
+      RENV_CONFIG_AUTOLOADER_ENABLED: 'false'
+
+    steps:
+      - name: Checkout staging
+        uses: actions/checkout@v4
+        with:
+          ref: staging
 
 - name: Setup R ${{ env.R_VERSION }}
 uses: r-lib/actions/setup-r@v2
