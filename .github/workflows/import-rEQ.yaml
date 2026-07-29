@@ -65,7 +65,7 @@ jobs:
             exit 0
           fi
 
-          git add launcher/extdata/importEQdata.RData
+          git add launcher/extdata/EQ_data.RData
           git add launcher/www/RMD_data.RData
           git commit -m "Data updated"
           git push origin HEAD:${GITHUB_REF_NAME}
