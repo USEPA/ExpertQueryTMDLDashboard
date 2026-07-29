@@ -41,13 +41,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Import org data
-        run: Rscript -e 'source("inst/extdata/importEQdata.R")'
+        run: Rscript -e 'source("launcher/extdata/importEQdata.R")'
 
       - name: Commit results
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add inst/extdata/importEQdata.R
-          git add inst/extdata/importEQdata.R
+          git add launcher/extdata/importEQdata.RData
+          git add launcher/www/RMD_data.RData
           git commit -m 'Data updated' || echo "No changes to commit"
           git push origin || echo "No changes to commit"
