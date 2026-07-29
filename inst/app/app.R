@@ -36,8 +36,12 @@ if (!exists("EQ_cache", inherits = FALSE)) EQ_cache <- new.env(parent = emptyenv
 
 # Load EQ_data.RData with a plain-mode fallback
 load_eq_data <- function() {
-  # Plain mode (repo) first
-  p <- file.path(getwd(), "inst", "extdata", "EQ_data.RData")
+  # Launcher/repo mode first
+  p <- file.path(getwd(), "launcher", "extdata", "EQ_data.RData")
+  if (!file.exists(p)) {
+    # If the app root is already launcher/
+    p <- file.path("extdata", "EQ_data.RData")
+  }
   if (!file.exists(p)) {
     # Package mode fallback
     p <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
