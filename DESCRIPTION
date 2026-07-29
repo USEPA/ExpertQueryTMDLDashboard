@@ -24,7 +24,8 @@ Imports:
     scales,
     shiny,
     shinyjs,
-    shinythemes
+    shinythemes,
+    stringi
 Remotes:
     USEPA/rExpertQuery@develop
 Encoding: UTF-8

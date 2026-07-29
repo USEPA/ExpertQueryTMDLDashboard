@@ -1,21 +1,31 @@
-# based on https://rfortherestofus.com/2023/05/github-actions
 name: import data
+
 on:
   push:
   schedule:
-    - cron: '15 06 * * 0' # This runs at 06:15 AM, only on Sunday
+    - cron: '15 06 * * 0'
   workflow_dispatch:
-permissions: write-all
+
+permissions:
+  contents: write
 
 jobs:
   import-data:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
 
-      - name: Install packages
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libxml2-dev libssl-dev
+
+      - name: Install R dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           packages: |
@@ -23,31 +33,39 @@ jobs:
             any::dplyr
             any::httr2
             any::usethis
-            any::pkgdown
-            any::rcmdcheck
-            any::rversions
-            any::urlchecker
             any::jsonlite
             any::lubridate
             any::devtools
-            
-      - name: Install package rExpertQuery from GitHub
-        run: |
-          Rscript -e "remotes::install_github('USEPA/rExpertQuery@develop', dependencies = TRUE, Sys.getenv('GITHUB_PAT'))"
-        env:
-          GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Check out repository
-        uses: actions/checkout@v3
+      - name: Install rExpertQuery from GitHub
+        run: |
+          Rscript -e "remotes::install_github('USEPA/rExpertQuery', ref = 'develop', dependencies = TRUE, auth_token = Sys.getenv('GITHUB_TOKEN'))"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Import org data
-        run: Rscript -e 'source("inst/extdata/importEQdata.R")'
+        run: |
+          Rscript launcher/extdata/importEQdata.R
+
+      - name: Debug output files
+        run: |
+          pwd
+          ls -la
+          ls -la launcher || true
+          ls -la launcher/extdata || true
+          ls -la launcher/www || true
 
       - name: Commit results
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add inst/extdata/importEQdata.R
-          git add inst/extdata/importEQdata.R
-          git commit -m 'Data updated' || echo "No changes to commit"
-          git push origin || echo "No changes to commit"
+
+          if git diff --quiet -- launcher/extdata/importEQdata.RData launcher/www/RMD_data.RData; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git add launcher/extdata/EQ_data.RData
+          git add launcher/www/RMD_data.RData
+          git commit -m "Data updated"
+          git push origin HEAD:${GITHUB_REF_NAME}
