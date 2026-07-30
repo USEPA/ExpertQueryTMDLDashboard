@@ -45,7 +45,7 @@ jobs:
 
       - name: Import org data
         run: |
-          Rscript launcher/extdata/importEQdata.R
+          Rscript launcher/scripts/importEQdata.R
 
       - name: Debug output files
         run: |
@@ -65,7 +65,7 @@ jobs:
             exit 0
           fi
 
-          git add launcher/extdata/EQ_data.RData
-          git add launcher/www/RMD_data.RData
+          git add launcher/data/EQ_data.RData
+          git add launcher/data/RMD_data.RData
           git commit -m "Data updated"
           git push origin HEAD:${GITHUB_REF_NAME}
