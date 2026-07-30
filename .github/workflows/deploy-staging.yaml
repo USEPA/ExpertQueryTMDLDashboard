@@ -29,6 +29,7 @@ jobs:
       CONNECT_SERVER: ${{ secrets.CONNECT_SERVER }}
       CONNECT_ACCOUNT: ${{ secrets.CONNECT_ACCOUNT }}
       CONNECT_APP_ID: ${{ secrets.CONNECT_APP_ID }}
+      MY_PAT: ${{ secrets.MY_PAT }}
 
     steps:
       - name: Checkout staging branch
@@ -53,7 +54,7 @@ jobs:
 
           # Install rExpertQuery from GitHub so importEQdata.R can run
           if (!requireNamespace("rExpertQuery", quietly = TRUE)) {
-            remotes::install_github("USEPA/rExpertQuery")
+            remotes::install_github("USEPA/rExpertQuery", auth_token = Sys.getenv("MY_PAT"), dependencies = TRUE)
           }
           RS
 
