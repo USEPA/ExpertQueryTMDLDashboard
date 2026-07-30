@@ -1,4 +1,4 @@
-name: Write manifest for Posit Connect (staging)
+name: Update data, write manifest, and deploy Shiny app to Connect (staging)
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  write-manifest:
+  deploy-staging:
     if: >
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
@@ -19,42 +19,59 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      R_VERSION: '4.1.0'
+      R_VERSION: '4.5.3'
       CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
+      # GitHub Actions secrets
+      CONNECT_SERVER: ${{ secrets.CONNECT_SERVER }}
+      CONNECT_ACCOUNT: ${{ secrets.CONNECT_ACCOUNT }}
+      CONNECT_APP_ID: ${{ secrets.CONNECT_APP_ID }}
+
     steps:
-      - name: Checkout staging
+      - name: Checkout staging branch
         uses: actions/checkout@v4
         with:
           ref: staging
+          fetch-depth: 0
 
       - name: Setup R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ env.R_VERSION }}
 
-      - name: Install required R packages
+      - name: Install workflow packages
         run: |
           Rscript - <<'RS'
           repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
-          needed <- c("rsconnect", "jsonlite")
+
+          needed <- c("rsconnect", "jsonlite", "remotes")
           missing <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
           if (length(missing)) install.packages(missing, repos = repo)
+
+          # Install rExpertQuery from GitHub so importEQdata.R can run
+          if (!requireNamespace("rExpertQuery", quietly = TRUE)) {
+            remotes::install_github("USEPA/rExpertQuery")
+          }
           RS
 
-      - name: Verify app does not reference TMDLDash
+      - name: Run data update script
+        run: |
+          Rscript scripts/importEQdata.R
+
+      - name: Verify app code does not reference TMDLDash package
         shell: bash
         run: |
           APPDIR="launcher"
           if grep -R --include="*.R" -nE "library\\(TMDLDash\\)|TMDLDash::" "$APPDIR"; then
-            echo "Found references to TMDLDash in app code."
+            echo "Found TMDLDash package references in app code."
             exit 1
           fi
 
-      - name: Write manifest in launcher
+      - name: Write manifest for launcher
         run: |
           Rscript - <<'RS'
           repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
+
           if (!requireNamespace("rsconnect", quietly = TRUE)) {
             install.packages("rsconnect", repos = repo)
           }
@@ -63,7 +80,6 @@ jobs:
           }
 
           appdir <- "launcher"
-
           rsconnect::writeManifest(appDir = appdir, force = TRUE)
 
           man_path <- file.path(appdir, "manifest.json")
@@ -76,7 +92,33 @@ jobs:
           cat("Manifest R version:", rv, "\n")
           RS
 
-      - name: Commit and push if changed
+      - name: Deploy launcher app to Connect
+        run: |
+          Rscript - <<'RS'
+          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
+          if (!requireNamespace("rsconnect", quietly = TRUE)) {
+            install.packages("rsconnect", repos = repo)
+          }
+
+          server <- Sys.getenv("CONNECT_SERVER")
+          account <- Sys.getenv("CONNECT_ACCOUNT")
+          app_id <- Sys.getenv("CONNECT_APP_ID")
+
+          if (!nzchar(server)) stop("CONNECT_SERVER is not set")
+          if (!nzchar(account)) stop("CONNECT_ACCOUNT is not set")
+          if (!nzchar(app_id)) stop("CONNECT_APP_ID is not set")
+
+          rsconnect::deployApp(
+            appDir = "launcher",
+            server = server,
+            account = account,
+            appId = as.integer(app_id),
+            forceUpdate = TRUE,
+            launch.browser = FALSE
+          )
+          RS
+
+      - name: Commit manifest if changed
         shell: bash
         run: |
           git config user.name "github-actions[bot]"

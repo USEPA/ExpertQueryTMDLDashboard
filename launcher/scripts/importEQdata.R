@@ -216,12 +216,16 @@ if(check.api == 200) {
   
   # create .RData files
   
-  save(filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg,
-       pollutants_groups, parameters, max_year, years_list, categories, update.tmdls,
-       act_agencies,
-       file = "launcher/extdata/EQ_data.RData")
+  save(
+    filt.df, states_regions, addparameters_filter_poll, addparameters_filter_pg,
+    pollutants_groups, parameters, max_year, years_list, categories, update.tmdls,
+    act_agencies,
+    file = file.path("launcher", "data", "EQ_data.RData")
+  )
   
-  save(update.tmdls, orig.distinct.n, orig.dups.n, orig.dups.removed, orig.n,
-       orig.noauid.n, orig.nopoll.n, orig.noauidpoll.n, max.dups, min.dups, filt.df.n,
-       file = "launcher/www/RMD_data.RData")
+  save(
+    update.tmdls, orig.distinct.n, orig.dups.n, orig.dups.removed, orig.n,
+    orig.noauid.n, orig.nopoll.n, orig.noauidpoll.n, max.dups, min.dups, filt.df.n,
+    file = file.path("launcher", "data", "RMD_data.RData")
+  )
 }
