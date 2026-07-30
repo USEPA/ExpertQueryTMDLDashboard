@@ -8,5 +8,5 @@ local({
     lapply(rfiles, sys.source, envir = environment())
   }
   # Run the actual app (your real app lives in inst/app/app.R)
-  source(file.path("launcher", "app.R"), local = TRUE)$value
+  source(file.path("inst", "app", "app.R"), local = TRUE)$value
 })

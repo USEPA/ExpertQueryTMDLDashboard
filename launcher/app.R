@@ -13,7 +13,7 @@ local({
       rfiles <- list.files(rdir, pattern = "\\.[Rr]$", full.names = TRUE)
       lapply(rfiles, sys.source, envir = environment())
     }
-    # Source app from launcher and temporarily setwd() there so relative paths work
-    source(file.path("launcher", "app.R"), local = TRUE, chdir = TRUE)$value
+    # Source app from inst/app and temporarily setwd() there so relative paths work
+    source(file.path("inst", "app", "app.R"), local = TRUE, chdir = TRUE)$value
   }
 })
