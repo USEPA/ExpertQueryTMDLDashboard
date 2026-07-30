@@ -2,6 +2,9 @@ name: Update data, write manifest, and deploy Shiny app to Connect (staging)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - staging
   workflow_run:
     workflows: ["render-rmarkdown"]
     types:
