@@ -7,16 +7,20 @@ on:
     types:
       - completed
 
+permissions:
+  contents: write
+
 jobs:
   write-manifest:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     env:
       R_VERSION: '4.1.0'
       CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
-      RENV_CONFIG_AUTOLOADER_ENABLED: 'false'
 
     steps:
       - name: Checkout staging
@@ -24,86 +28,65 @@ jobs:
         with:
           ref: staging
 
-      - name: Setup R ${{ env.R_VERSION }}
+      - name: Setup R
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ env.R_VERSION }}
 
-      - name: Ensure base tools (renv, rsconnect, yaml, jsonlite)
+      - name: Install required R packages
         run: |
           Rscript - <<'RS'
-          repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
-          need <- c('renv','rsconnect','yaml','jsonlite')
-          miss <- need[!vapply(need, requireNamespace, logical(1), quietly = TRUE)]
-          if (length(miss)) install.packages(miss, repos = repo)
+          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
+          needed <- c("rsconnect", "jsonlite")
+          missing <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(missing)) install.packages(missing, repos = repo)
           RS
 
-      - name: Pin packages for R ${{ env.R_VERSION }}
-        run: |
-          Rscript - <<'RS'
-          if (!requireNamespace('renv', quietly = TRUE)) {
-            install.packages('renv', repos = Sys.getenv('CRAN_REPO'))
-          }
-          RS
-
-      - name: Install project dependencies from app directory (skip TMDLDash)
-        env:
-          RENV_CONFIG_IGNORE_LOCKFILE: true
-        run: |
-          Rscript - <<'RS'
-          repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
-          if (!requireNamespace('renv', quietly = TRUE)) {
-            install.packages('renv', repos = repo)
-          }
-          appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
-          deps <- renv::dependencies(path = appdir, progress = FALSE)
-          pkgs <- unique(na.omit(deps$Package))
-          base <- rownames(installed.packages(priority = 'base'))
-          cran_pkgs <- setdiff(pkgs, c(base, 'TMDLDash'))
-          if (length(cran_pkgs)) {
-            for (p in cran_pkgs) {
-              message('Installing ', p, ' ...')
-              try(renv::install(p), silent = TRUE)
-            }
-          }
-          RS
-
-      - name: Ensure app does not reference TMDLDash
+      - name: Verify app does not reference TMDLDash
         shell: bash
         run: |
-          APPDIR="inst/app"
-          [ -d "$APPDIR" ] || APPDIR="."
+          APPDIR="launcher"
           if grep -R --include="*.R" -nE "library\\(TMDLDash\\)|TMDLDash::" "$APPDIR"; then
-            echo "Found references to TMDLDash in app code. Remove them for Option A (or use Option B with a PAT)."
+            echo "Found references to TMDLDash in app code."
             exit 1
           fi
 
-      - name: Write manifest into app directory and show R version
+      - name: Write manifest in launcher
         run: |
           Rscript - <<'RS'
-          repo <- Sys.getenv('CRAN_REPO', 'https://cloud.r-project.org')
-          if (!requireNamespace('rsconnect', quietly = TRUE)) {
-            install.packages('rsconnect', repos = repo)
+          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
+          if (!requireNamespace("rsconnect", quietly = TRUE)) {
+            install.packages("rsconnect", repos = repo)
           }
-          if (!requireNamespace('jsonlite', quietly = TRUE)) {
-            install.packages('jsonlite', repos = repo)
+          if (!requireNamespace("jsonlite", quietly = TRUE)) {
+            install.packages("jsonlite", repos = repo)
           }
-          appdir <- if (dir.exists('inst/app')) 'inst/app' else '.'
-          lf <- file.path(appdir, 'renv.lock')
-          if (file.exists(lf)) file.rename(lf, paste0(lf, '.bak'))
+
+          appdir <- "launcher"
+
           rsconnect::writeManifest(appDir = appdir, force = TRUE)
-          man_path <- file.path(appdir, 'manifest.json')
+
+          man_path <- file.path(appdir, "manifest.json")
+          if (!file.exists(man_path)) stop("manifest.json was not created at: ", man_path)
+
           man <- jsonlite::read_json(man_path, simplifyVector = TRUE)
-          rv <- 'unknown'
-          if (!is.null(man$metadata) && !is.null(man$metadata$rVersion)) rv <- man$metadata$rVersion
-          if (!is.null(man$r) && !is.null(man$r$version)) rv <- man$r$version
-          cat('Manifest R version:', rv, '\n')
+          rv <- NA_character_
+          if (!is.null(man$metadata$rVersion)) rv <- man$metadata$rVersion
+          if (!is.null(man$r$version)) rv <- man$r$version
+          cat("Manifest R version:", rv, "\n")
           RS
 
-      - name: Commit manifest.json to staging
+      - name: Commit and push if changed
+        shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add inst/app/manifest.json manifest.json || true
-          git commit -m "Add manifest.json generated under R ${{ env.R_VERSION }} (staging)" || echo "No changes to commit"
+
+          if git diff --quiet -- launcher/manifest.json; then
+            echo "No manifest changes to commit."
+            exit 0
+          fi
+
+          git add launcher/manifest.json
+          git commit -m "Update launcher manifest.json"
           git push origin HEAD:staging
