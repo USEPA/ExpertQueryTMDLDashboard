@@ -36,14 +36,8 @@ if (!exists("EQ_cache", inherits = FALSE)) EQ_cache <- new.env(parent = emptyenv
 
 # Load EQ_data.RData with a plain-mode fallback
 load_eq_data <- function() {
-  # Launcher/repo mode first
-  p <- file.path(getwd(), "launcher", "extdata", "EQ_data.RData")
+  p <- file.path("extdata", "EQ_data.RData")
   if (!file.exists(p)) {
-    # If the app root is already launcher/
-    p <- file.path("extdata", "EQ_data.RData")
-  }
-  if (!file.exists(p)) {
-    # Package mode fallback
     p <- system.file("extdata", "EQ_data.RData", package = "TMDLDash")
   }
   if (!nzchar(p) || !file.exists(p)) stop("EQ_data.RData not found at: ", p)
@@ -51,7 +45,6 @@ load_eq_data <- function() {
   tmp <- new.env(parent = emptyenv())
   objs <- load(p, envir = tmp)
   
-  # Temporary diagnostics to confirm on Connect
   message("EQ_data path used: ", p)
   message("Loaded objects: ", paste(objs, collapse = ", "))
   if (!"parameters" %in% objs) stop("Object 'parameters' not found in EQ_data.RData")
@@ -60,7 +53,6 @@ load_eq_data <- function() {
   EQ_cache$loaded <- TRUE
 }
 load_eq_data()
-
 # UI
 ui <- bslib::page_fluid(
   theme = bslib::bs_theme(version = 5),            # or 4 if you used BS4 classes
