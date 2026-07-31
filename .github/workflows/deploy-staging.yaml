@@ -6,7 +6,7 @@ on:
     branches:
       - staging
   workflow_run:
-    workflows: ["render-rmarkdown"]
+    workflows: ["render-rmarkdown staging"]
     types:
       - completed
 

@@ -1,11 +1,11 @@
-name: render-rmarkdown
+name: render-rmarkdown staging
 
 on:
   push:
     branches:
       -staging
   workflow_run:
-    workflows: ["import data"]
+    workflows: ["import data staging"]
     types:
       - completed
   workflow_dispatch:
