@@ -22,9 +22,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -39,22 +36,25 @@ jobs:
         with:
           r-version: release
 
-      - name: Install packages
+      - name: Install R packages
         run: |
           Rscript - <<'RS'
-          install.packages(c(
-            "knitr",
-            "dplyr",
-            "DiagrammeR",
-            "htmlwidgets",
-            "rmarkdown"
-          ), repos = "https://cloud.r-project.org")
+          repos <- "https://cloud.r-project.org"
+          pkgs <- c("rmarkdown", "knitr", "dplyr", "DiagrammeR", "htmlwidgets")
+          missing <- pkgs[!vapply(pkgs, requireNamespace, logical(1), quietly = TRUE)]
+          if (length(missing)) install.packages(missing, repos = repos)
+          message("Available packages: ", paste(pkgs, collapse = ", "))
           RS
+
+      - name: Verify rmarkdown installation
+        run: |
+          Rscript -e 'stopifnot(requireNamespace("rmarkdown", quietly = TRUE)); print(packageVersion("rmarkdown"))'
 
       - name: Show launcher files for debugging
         shell: bash
         run: |
-          find launcher -maxdepth 3 -type f | sort
+          echo "Working directory: $(pwd)"
+          find launcher -maxdepth 4 -type f | sort
 
       - name: Render Rmarkdown file
         run: |
@@ -65,6 +65,12 @@ jobs:
         run: |
           git config --local user.name "$GITHUB_ACTOR"
           git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
           git add launcher/www/DataCleaning.html
-          git commit -m "Report updated" || echo "No changes to commit"
-          git push origin HEAD:${GITHUB_REF_NAME} || echo "No changes to commit"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Report updated"
+          git push origin HEAD:staging
