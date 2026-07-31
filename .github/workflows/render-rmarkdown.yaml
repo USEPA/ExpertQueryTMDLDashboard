@@ -1,6 +1,9 @@
 name: render-rmarkdown
 
 on:
+  push:
+    branches:
+      -staging
   workflow_run:
     workflows: ["import data"]
     types:
