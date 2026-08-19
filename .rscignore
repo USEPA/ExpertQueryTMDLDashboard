@@ -1,7 +1,0 @@
-^\.git$
-^\.Rproj\.user$
-^dev/
-^launcher/
-^\.github/
-^.*\.Rhistory$
-^inst/app/www/.*\.Rmd$
