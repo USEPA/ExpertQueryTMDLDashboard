@@ -1,98 +1,97 @@
-name: render-rmarkdown-staging
+name: Deploy Shiny app to Connect (staging)
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - staging
-  workflow_run:
-    workflows: ["import data staging"]
-    types:
-      - completed
-  workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  render-rmarkdown:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      github.event.workflow_run.conclusion == 'success'
-
+  deploy-staging:
     runs-on: ubuntu-latest
 
+    env:
+      R_VERSION: '4.5.3'
+      CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
+
+      CONNECT_SERVER: ${{ secrets.CONNECT_SERVER }}
+      CONNECT_ACCOUNT: ${{ secrets.CONNECT_ACCOUNT }}
+      CONNECT_APP_ID: ${{ secrets.CONNECT_APP_ID }}
+
     steps:
-      - name: Checkout repo
+      - name: Checkout staging branch
         uses: actions/checkout@v4
         with:
+          ref: staging
           fetch-depth: 0
-
-      - name: Setup Pandoc
-        uses: r-lib/actions/setup-pandoc@v2
 
       - name: Setup R
         uses: r-lib/actions/setup-r@v2
         with:
-          r-version: release
+          r-version: ${{ env.R_VERSION }}
 
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libcurl4-openssl-dev \
-            libssl-dev \
-            libxml2-dev \
-            libfontconfig1-dev \
-            libfreetype6-dev \
-            libharfbuzz-dev \
-            libfribidi-dev \
-            pkg-config
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev pkg-config
 
-      - name: Install R packages
+      - name: Install rsconnect
+        run: |
+          Rscript -e 'install.packages("rsconnect", repos = Sys.getenv("CRAN_REPO"))'
+
+      - name: Verify app root
         run: |
           Rscript - <<'RS'
-          options(repos = c(CRAN = "https://cloud.r-project.org"))
-          pkgs <- c("rmarkdown", "knitr", "dplyr", "DiagrammeR", "htmlwidgets")
-          install.packages(pkgs, dependencies = TRUE)
-          cat("\nInstalled packages:\n")
-          print(pkgs)
-          RS
+          appdir <- "app"
 
-      - name: Check rmarkdown install
-        run: |
-          Rscript - <<'RS'
-          cat("Library paths:\n")
-          print(.libPaths())
-          cat("Installed?\n")
-          print(requireNamespace("rmarkdown", quietly = TRUE))
-          if (!requireNamespace("rmarkdown", quietly = TRUE)) {
-            stop("rmarkdown is still not installed")
+          required <- c(
+            file.path(appdir, ".Rprofile"),
+            file.path(appdir, "renv.lock"),
+            file.path(appdir, "renv", "activate.R"),
+            file.path(appdir, "app.R")
+          )
+
+          missing <- required[!file.exists(required)]
+          if (length(missing)) {
+            stop("Missing required files:\n", paste(missing, collapse = "\n"))
           }
-          print(packageVersion("rmarkdown"))
+
+          if (dir.exists(file.path(appdir, "packrat")) ||
+              file.exists(file.path(appdir, "packrat.lock")) ||
+              file.exists(file.path(appdir, "packrat.opts"))) {
+            stop("Packrat files detected in app/")
+          }
+
+          cat("app/ looks clean.\n")
           RS
 
-      - name: Show launcher files for debugging
-        shell: bash
+      - name: Deploy app to Connect
         run: |
-          echo "Working directory: $(pwd)"
-          find launcher -maxdepth 4 -type f | sort
+          Rscript - <<'RS'
+          server <- Sys.getenv("CONNECT_SERVER")
+          account <- Sys.getenv("CONNECT_ACCOUNT")
+          app_id <- Sys.getenv("CONNECT_APP_ID")
 
-      - name: Render Rmarkdown file
-        run: |
-          Rscript -e 'rmarkdown::render(input = "launcher/scripts/DataCleaning.Rmd")'
+          if (!nzchar(server)) stop("CONNECT_SERVER is not set")
+          if (!nzchar(account)) stop("CONNECT_ACCOUNT is not set")
+          if (!nzchar(app_id)) stop("CONNECT_APP_ID is not set")
 
-      - name: Commit and push results
-        shell: bash
-        run: |
-          git config --local user.name "$GITHUB_ACTOR"
-          git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          rsconnect::setAccountInfo(
+            name = account,
+            token = Sys.getenv("CONNECT_TOKEN"),
+            secret = Sys.getenv("CONNECT_SECRET"),
+            server = server
+          )
 
-          git add launcher/scripts/DataCleaning.html
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          git commit -m "Report updated"
-          git push origin HEAD:staging
+          rsconnect::deployApp(
+            appDir = "app",
+            server = server,
+            account = account,
+            appId = as.integer(app_id),
+            forceUpdate = TRUE,
+            launch.browser = FALSE
+          )
+          RS
