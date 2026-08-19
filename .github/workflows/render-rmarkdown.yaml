@@ -1,49 +1,97 @@
-# Workflow derived from https://github.com/r-lib/actions/tree/v2/examples
-# Need help debugging build failures? Start at https://github.com/r-lib/actions#where-to-find-help
+name: Deploy Shiny app to Connect (staging)
+
 on:
-  workflow_run:
-    workflows: ["import data"]
-    types:
-      - completed
-    paths: ['**.Rmd']
+  workflow_dispatch:
+  push:
+    branches:
+      - staging
 
-name: render-rmarkdown.yaml
-
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
-  render-rmarkdown:
+  deploy-staging:
     runs-on: ubuntu-latest
+
     env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-    permissions:
-      contents: write
+      R_VERSION: '4.5.3'
+      CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
+
+      CONNECT_SERVER: ${{ secrets.CONNECT_SERVER }}
+      CONNECT_ACCOUNT: ${{ secrets.CONNECT_ACCOUNT }}
+      CONNECT_APP_ID: ${{ secrets.CONNECT_APP_ID }}
+
     steps:
-      - name: Checkout repo
+      - name: Checkout staging branch
         uses: actions/checkout@v4
         with:
+          ref: staging
           fetch-depth: 0
 
-      - uses: r-lib/actions/setup-pandoc@v2
-
-      - uses: r-lib/actions/setup-r@v2
+      - name: Setup R
+        uses: r-lib/actions/setup-r@v2
         with:
-          r-version: release
-          
-      - name: Install packages
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: |
-            any::knitr
-            any::dplyr
-            any::DiagrammeR
-            any::htmlwidgets
+          r-version: ${{ env.R_VERSION }}
 
-      - name: Render Rmarkdown files and Commit Results
+      - name: Install system dependencies
         run: |
-          Rscript -e 'rmarkdown::render(input = "launcher/scripts/DataCleaning.Rmd")'
-          git config --local user.name "$GITHUB_ACTOR"
-          git config --local user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          git add launcher/scripts/DataCleaning.html
-          git commit -m 'Report updated' || echo "No changes to commit"
-          git push origin || echo "No changes to commit"
+          sudo apt-get update
+          sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev pkg-config
+
+      - name: Install rsconnect
+        run: |
+          Rscript -e 'install.packages("rsconnect", repos = Sys.getenv("CRAN_REPO"))'
+
+      - name: Verify app root
+        run: |
+          Rscript - <<'RS'
+          appdir <- "app"
+
+          required <- c(
+            file.path(appdir, ".Rprofile"),
+            file.path(appdir, "renv.lock"),
+            file.path(appdir, "renv", "activate.R"),
+            file.path(appdir, "app.R")
+          )
+
+          missing <- required[!file.exists(required)]
+          if (length(missing)) {
+            stop("Missing required files:\n", paste(missing, collapse = "\n"))
+          }
+
+          if (dir.exists(file.path(appdir, "packrat")) ||
+              file.exists(file.path(appdir, "packrat.lock")) ||
+              file.exists(file.path(appdir, "packrat.opts"))) {
+            stop("Packrat files detected in app/")
+          }
+
+          cat("app/ looks clean.\n")
+          RS
+
+      - name: Deploy app to Connect
+        run: |
+          Rscript - <<'RS'
+          server <- Sys.getenv("CONNECT_SERVER")
+          account <- Sys.getenv("CONNECT_ACCOUNT")
+          app_id <- Sys.getenv("CONNECT_APP_ID")
+
+          if (!nzchar(server)) stop("CONNECT_SERVER is not set")
+          if (!nzchar(account)) stop("CONNECT_ACCOUNT is not set")
+          if (!nzchar(app_id)) stop("CONNECT_APP_ID is not set")
+
+          rsconnect::setAccountInfo(
+            name = account,
+            token = Sys.getenv("CONNECT_TOKEN"),
+            secret = Sys.getenv("CONNECT_SECRET"),
+            server = server
+          )
+
+          rsconnect::deployApp(
+            appDir = "app",
+            server = server,
+            account = account,
+            appId = as.integer(app_id),
+            forceUpdate = TRUE,
+            launch.browser = FALSE
+          )
+          RS
