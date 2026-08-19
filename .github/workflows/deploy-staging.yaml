@@ -1,4 +1,4 @@
-name: Update data, write manifest, and deploy Shiny app to Connect (staging)
+name: Update data and deploy Shiny app to Connect (staging)
 
 on:
   workflow_dispatch:
@@ -42,7 +42,7 @@ jobs:
         uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ env.R_VERSION }}
-          
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -57,9 +57,12 @@ jobs:
           missing <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
           if (length(missing)) install.packages(missing, repos = repo)
 
-          # Install rExpertQuery from GitHub so importEQdata.R can run
           if (!requireNamespace("rExpertQuery", quietly = TRUE)) {
-            remotes::install_github("USEPA/rExpertQuery", auth_token = Sys.getenv("MY_PAT"), dependencies = TRUE)
+            remotes::install_github(
+              "USEPA/rExpertQuery",
+              auth_token = Sys.getenv("MY_PAT"),
+              dependencies = TRUE
+            )
           }
           RS
 
@@ -67,38 +70,29 @@ jobs:
         run: |
           Rscript scripts/importEQdata.R
 
-      - name: Verify app code does not reference TMDLDash package
-        shell: bash
-        run: |
-          APPDIR="launcher"
-          if grep -R --include="*.R" -nE "library\\(TMDLDash\\)|TMDLDash::" "$APPDIR"; then
-            echo "Found TMDLDash package references in app code."
-            exit 1
-          fi
-
-      - name: Write manifest for launcher
+      - name: Verify launcher app files
         run: |
           Rscript - <<'RS'
-          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
-
-          if (!requireNamespace("rsconnect", quietly = TRUE)) {
-            install.packages("rsconnect", repos = repo)
-          }
-          if (!requireNamespace("jsonlite", quietly = TRUE)) {
-            install.packages("jsonlite", repos = repo)
-          }
-
           appdir <- "launcher"
-          rsconnect::writeManifest(appDir = appdir, force = TRUE)
 
-          man_path <- file.path(appdir, "manifest.json")
-          if (!file.exists(man_path)) stop("manifest.json was not created at: ", man_path)
+          required <- c(
+            file.path(appdir, ".Rprofile"),
+            file.path(appdir, "renv.lock"),
+            file.path(appdir, "renv", "activate.R")
+          )
 
-          man <- jsonlite::read_json(man_path, simplifyVector = TRUE)
-          rv <- NA_character_
-          if (!is.null(man$metadata$rVersion)) rv <- man$metadata$rVersion
-          if (!is.null(man$r$version)) rv <- man$r$version
-          cat("Manifest R version:", rv, "\n")
+          missing <- required[!file.exists(required)]
+          if (length(missing)) {
+            stop("Missing required renv files:\n", paste(missing, collapse = "\n"))
+          }
+
+          if (dir.exists(file.path(appdir, "packrat")) ||
+              file.exists(file.path(appdir, "packrat.lock")) ||
+              file.exists(file.path(appdir, "packrat.opts"))) {
+            stop("Packrat files detected in launcher/")
+          }
+
+          cat("launcher/ looks renv-only and clean.\n")
           RS
 
       - name: Deploy launcher app to Connect
@@ -126,18 +120,3 @@ jobs:
             launch.browser = FALSE
           )
           RS
-
-      - name: Commit manifest if changed
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          if git diff --quiet -- launcher/manifest.json; then
-            echo "No manifest changes to commit."
-            exit 0
-          fi
-
-          git add launcher/manifest.json
-          git commit -m "Update launcher manifest.json"
-          git push origin HEAD:staging
