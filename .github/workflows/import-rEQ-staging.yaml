@@ -53,9 +53,9 @@ jobs:
         run: |
           pwd
           ls -la
-          ls -la launcher || true
-          ls -la launcher/extdata || true
-          ls -la launcher/www || true
+          ls -la app || true
+          ls -la app/data || true
+          ls -la app/www || true
 
       - name: Commit results
         run: |
