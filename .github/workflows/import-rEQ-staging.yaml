@@ -47,7 +47,7 @@ jobs:
 
       - name: Import org data
         run: |
-          Rscript launcher/scripts/importEQdata.R
+          Rscript scripts/importEQdata.R
 
       - name: Debug output files
         run: |
