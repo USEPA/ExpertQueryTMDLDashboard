@@ -52,55 +52,18 @@ jobs:
           Rscript - <<'RS'
           options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))
 
-          cat("R version:\n")
-          print(R.version.string)
-
-          cat("Library paths:\n")
-          print(.libPaths())
-
           pkgs <- c("rmarkdown", "knitr", "dplyr", "DiagrammeR", "htmlwidgets")
-
-          cat("Attempting batch install:\n")
-          print(pkgs)
-
-          ok <- TRUE
-          tryCatch(
-            install.packages(pkgs, dependencies = TRUE),
-            error = function(e) {
-              ok <<- FALSE
-              cat("\nBatch install failed:\n")
-              message(conditionMessage(e))
-            }
-          )
-
-          if (!ok || !requireNamespace("rmarkdown", quietly = TRUE)) {
-            cat("\nFalling back to one-by-one install...\n")
-            for (p in pkgs) {
-              cat("\nInstalling:", p, "\n")
-              tryCatch(
-                install.packages(p, dependencies = TRUE),
-                error = function(e) {
-                  cat("Failed to install", p, ":\n")
-                  message(conditionMessage(e))
-                }
-              )
-              cat("Installed?", p, requireNamespace(p, quietly = TRUE), "\n")
-            }
-          }
-
-          cat("\nInstalled packages after install:\n")
-          print(intersect(pkgs, rownames(installed.packages())))
-
-          cat("\nrmarkdown installed?\n")
-          print(requireNamespace("rmarkdown", quietly = TRUE))
+          install.packages(pkgs, dependencies = TRUE)
 
           if (!requireNamespace("rmarkdown", quietly = TRUE)) {
             stop("rmarkdown failed to install")
           }
-
-          cat("\nrmarkdown version:\n")
-          print(packageVersion("rmarkdown"))
           RS
+
+      - name: Verify RMD data file
+        run: |
+          ls -lh app/data || true
+          test -f app/data/RMD_data.RData || (echo "Missing app/data/RMD_data.RData" && exit 1)
 
       - name: Show app files for debugging
         shell: bash
