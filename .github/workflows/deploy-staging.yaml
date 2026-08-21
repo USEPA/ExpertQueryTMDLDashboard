@@ -2,9 +2,6 @@ name: Update data and deploy Shiny app to Connect (staging)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - staging
   workflow_run:
     workflows: ["render-rmarkdown-staging"]
     types:
@@ -17,7 +14,7 @@ jobs:
   deploy-staging:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
     runs-on: ubuntu-latest
 
@@ -29,6 +26,8 @@ jobs:
       CONNECT_SERVER: ${{ secrets.CONNECT_SERVER }}
       CONNECT_ACCOUNT: ${{ secrets.CONNECT_ACCOUNT }}
       CONNECT_APP_ID: ${{ secrets.CONNECT_APP_ID }}
+      CONNECT_TOKEN: ${{ secrets.CONNECT_TOKEN }}
+      CONNECT_SECRET: ${{ secrets.CONNECT_SECRET }}
       MY_PAT: ${{ secrets.MY_PAT }}
 
     steps:
@@ -51,11 +50,10 @@ jobs:
       - name: Install workflow packages
         run: |
           Rscript - <<'RS'
-          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
+          options(repos = c(CRAN = Sys.getenv("CRAN_REPO")))
 
-          needed <- c("rsconnect", "jsonlite", "remotes")
-          missing <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
-          if (length(missing)) install.packages(missing, repos = repo)
+          pkgs <- c("rsconnect", "jsonlite", "remotes")
+          install.packages(pkgs, dependencies = TRUE)
 
           if (!requireNamespace("rExpertQuery", quietly = TRUE)) {
             remotes::install_github(
@@ -64,16 +62,20 @@ jobs:
               dependencies = TRUE
             )
           }
+
+          if (!requireNamespace("rsconnect", quietly = TRUE)) {
+            stop("rsconnect failed to install")
+          }
           RS
 
       - name: Run data update script
         run: |
           Rscript scripts/importEQdata.R
 
-      - name: Verify launcher app files
+      - name: Verify app files
         run: |
           Rscript - <<'RS'
-          appdir <- "launcher"
+          appdir <- "app"
 
           required <- c(
             file.path(appdir, ".Rprofile"),
@@ -89,16 +91,18 @@ jobs:
           if (dir.exists(file.path(appdir, "packrat")) ||
               file.exists(file.path(appdir, "packrat.lock")) ||
               file.exists(file.path(appdir, "packrat.opts"))) {
-            stop("Packrat files detected in launcher/")
+            stop("Packrat files detected in app/")
           }
 
-          cat("launcher/ looks renv-only and clean.\n")
+          cat("app/ looks renv-only and clean.\n")
           RS
 
-      - name: Deploy launcher app to Connect
+      - name: Deploy app to Connect
         run: |
           Rscript - <<'RS'
-          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
+          repo <- Sys.getenv("CRAN_REPO")
+          options(repos = c(CRAN = repo))
+
           if (!requireNamespace("rsconnect", quietly = TRUE)) {
             install.packages("rsconnect", repos = repo)
           }
@@ -106,13 +110,24 @@ jobs:
           server <- Sys.getenv("CONNECT_SERVER")
           account <- Sys.getenv("CONNECT_ACCOUNT")
           app_id <- Sys.getenv("CONNECT_APP_ID")
+          token <- Sys.getenv("CONNECT_API_KEY")
+          secret <- Sys.getenv("CONNECT_SECRET")
 
           if (!nzchar(server)) stop("CONNECT_SERVER is not set")
           if (!nzchar(account)) stop("CONNECT_ACCOUNT is not set")
           if (!nzchar(app_id)) stop("CONNECT_APP_ID is not set")
+          if (!nzchar(token)) stop("CONNECT_TOKEN is not set")
+          if (!nzchar(secret)) stop("CONNECT_SECRET is not set")
+
+          rsconnect::setAccountInfo(
+            name = account,
+            token = token,
+            secret = secret,
+            server = server
+          )
 
           rsconnect::deployApp(
-            appDir = "launcher",
+            appDir = "app",
             server = server,
             account = account,
             appId = as.integer(app_id),
