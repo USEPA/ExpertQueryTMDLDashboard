@@ -68,10 +68,6 @@ jobs:
           }
           RS
 
-      - name: Run data update script
-        run: |
-          Rscript scripts/importEQdata.R
-
       - name: Verify app files
         run: |
           Rscript - <<'RS'
@@ -110,7 +106,7 @@ jobs:
           server <- Sys.getenv("CONNECT_SERVER")
           account <- Sys.getenv("CONNECT_ACCOUNT")
           app_id <- Sys.getenv("CONNECT_APP_ID")
-          token <- Sys.getenv("CONNECT_API_KEY")
+          token <- Sys.getenv("CONNECT_TOKEN")
           secret <- Sys.getenv("CONNECT_SECRET")
 
           if (!nzchar(server)) stop("CONNECT_SERVER is not set")
