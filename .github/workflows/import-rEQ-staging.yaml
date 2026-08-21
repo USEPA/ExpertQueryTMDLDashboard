@@ -18,6 +18,8 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up R
         uses: r-lib/actions/setup-r@v2
@@ -49,24 +51,22 @@ jobs:
         run: |
           Rscript scripts/importEQdata.R
 
-      - name: Debug output files
+      - name: Confirm generated files
         run: |
-          pwd
-          ls -la
-          ls -la app || true
-          ls -la app/data || true
+          ls -lh app/data || true
+          test -f app/data/EQ_data.RData && echo "EQ_data.RData exists" || (echo "EQ_data.RData missing" && exit 1)
+          test -f app/data/RMD_data.RData && echo "RMD_data.RData exists" || (echo "RMD_data.RData missing" && exit 1)
 
       - name: Commit results
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
-          if git diff --quiet -- app/data/importEQdata.RData app/data/RMD_data.RData; then
+          if git diff --quiet -- app/data/EQ_data.RData app/data/RMD_data.RData; then
             echo "No changes to commit"
             exit 0
           fi
 
-          git add app/data/EQ_data.RData
-          git add app/data/RMD_data.RData
+          git add app/data/EQ_data.RData app/data/RMD_data.RData
           git commit -m "Data updated"
-          git push origin HEAD:${GITHUB_REF_NAME}
+          git push origin HEAD:staging
