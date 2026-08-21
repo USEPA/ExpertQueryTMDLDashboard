@@ -87,6 +87,16 @@ jobs:
           }
           RS
 
+      - name: Test loading RMD data file directly
+        run: |
+          Rscript - <<'RS'
+          f <- "app/data/RMD_data.RData"
+          cat("exists:", file.exists(f), "\n")
+          cat("size:", file.info(f)$size, "\n")
+          obj_names <- load(f)
+          print(obj_names)
+          RS
+
       - name: Render Rmarkdown file
         run: |
           Rscript -e 'rmarkdown::render(input = "scripts/DataCleaning.Rmd")'
