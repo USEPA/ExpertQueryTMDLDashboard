@@ -1,14 +1,11 @@
 name: render-rmarkdown-staging
 
 on:
-  push:
-    branches:
-      - staging
+  workflow_dispatch:
   workflow_run:
     workflows: ["import data staging"]
     types:
       - completed
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,8 +14,7 @@ jobs:
   render-rmarkdown:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
     runs-on: ubuntu-latest
 
@@ -26,6 +22,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          ref: staging
           fetch-depth: 0
 
       - name: Setup Pandoc
@@ -53,10 +50,16 @@ jobs:
         run: |
           Rscript - <<'RS'
           options(repos = c(CRAN = "https://cloud.r-project.org"))
+
           pkgs <- c("rmarkdown", "knitr", "dplyr", "DiagrammeR", "htmlwidgets")
           install.packages(pkgs, dependencies = TRUE)
-          cat("\nInstalled packages:\n")
+
+          cat("Installed packages:\n")
           print(pkgs)
+
+          if (!requireNamespace("rmarkdown", quietly = TRUE)) {
+            stop("rmarkdown failed to install")
+          }
           RS
 
       - name: Check rmarkdown install
@@ -64,19 +67,23 @@ jobs:
           Rscript - <<'RS'
           cat("Library paths:\n")
           print(.libPaths())
-          cat("Installed?\n")
+
+          cat("rmarkdown installed?\n")
           print(requireNamespace("rmarkdown", quietly = TRUE))
+
           if (!requireNamespace("rmarkdown", quietly = TRUE)) {
             stop("rmarkdown is still not installed")
           }
+
+          cat("rmarkdown version:\n")
           print(packageVersion("rmarkdown"))
           RS
 
-      - name: Show launcher files for debugging
+      - name: Show app files for debugging
         shell: bash
         run: |
           echo "Working directory: $(pwd)"
-          find launcher -maxdepth 4 -type f | sort
+          find app -maxdepth 4 -type f | sort
 
       - name: Render Rmarkdown file
         run: |
