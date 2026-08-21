@@ -15,7 +15,7 @@ knitr::opts_chunk$set(include = FALSE)
 ```
 
 ```{r eq_data, include=FALSE}
-load("launcher/data/RMD_data.RData")
+load("app/data/RMD_data.RData")
 
 library(dplyr)
 library(DiagrammeR)
