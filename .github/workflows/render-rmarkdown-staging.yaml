@@ -1,35 +1,25 @@
-name: Update data and deploy Shiny app to Connect (staging)
+name: Deploy Shiny app to Connect (staging)
 
 on:
   workflow_dispatch:
   push:
     branches:
       - staging
-  workflow_run:
-    workflows: ["render-rmarkdown-staging"]
-    types:
-      - completed
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   deploy-staging:
-    if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
-
     runs-on: ubuntu-latest
 
     env:
       R_VERSION: '4.5.3'
       CRAN_REPO: https://packagemanager.posit.co/cran/__linux__/jammy/latest
 
-      # GitHub Actions secrets
       CONNECT_SERVER: ${{ secrets.CONNECT_SERVER }}
       CONNECT_ACCOUNT: ${{ secrets.CONNECT_ACCOUNT }}
       CONNECT_APP_ID: ${{ secrets.CONNECT_APP_ID }}
-      MY_PAT: ${{ secrets.MY_PAT }}
 
     steps:
       - name: Checkout staging branch
@@ -48,61 +38,39 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev pkg-config
 
-      - name: Install workflow packages
+      - name: Install rsconnect
+        run: |
+          Rscript -e 'install.packages("rsconnect", repos = Sys.getenv("CRAN_REPO"))'
+
+      - name: Verify app root
         run: |
           Rscript - <<'RS'
-          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
-
-          needed <- c("rsconnect", "jsonlite", "remotes")
-          missing <- needed[!vapply(needed, requireNamespace, logical(1), quietly = TRUE)]
-          if (length(missing)) install.packages(missing, repos = repo)
-
-          if (!requireNamespace("rExpertQuery", quietly = TRUE)) {
-            remotes::install_github(
-              "USEPA/rExpertQuery",
-              auth_token = Sys.getenv("MY_PAT"),
-              dependencies = TRUE
-            )
-          }
-          RS
-
-      - name: Run data update script
-        run: |
-          Rscript scripts/importEQdata.R
-
-      - name: Verify launcher app files
-        run: |
-          Rscript - <<'RS'
-          appdir <- "launcher"
+          appdir <- "app"
 
           required <- c(
             file.path(appdir, ".Rprofile"),
             file.path(appdir, "renv.lock"),
-            file.path(appdir, "renv", "activate.R")
+            file.path(appdir, "renv", "activate.R"),
+            file.path(appdir, "app.R")
           )
 
           missing <- required[!file.exists(required)]
           if (length(missing)) {
-            stop("Missing required renv files:\n", paste(missing, collapse = "\n"))
+            stop("Missing required files:\n", paste(missing, collapse = "\n"))
           }
 
           if (dir.exists(file.path(appdir, "packrat")) ||
               file.exists(file.path(appdir, "packrat.lock")) ||
               file.exists(file.path(appdir, "packrat.opts"))) {
-            stop("Packrat files detected in launcher/")
+            stop("Packrat files detected in app/")
           }
 
-          cat("launcher/ looks renv-only and clean.\n")
+          cat("app/ looks clean.\n")
           RS
 
-      - name: Deploy launcher app to Connect
+      - name: Deploy app to Connect
         run: |
           Rscript - <<'RS'
-          repo <- Sys.getenv("CRAN_REPO", "https://cloud.r-project.org")
-          if (!requireNamespace("rsconnect", quietly = TRUE)) {
-            install.packages("rsconnect", repos = repo)
-          }
-
           server <- Sys.getenv("CONNECT_SERVER")
           account <- Sys.getenv("CONNECT_ACCOUNT")
           app_id <- Sys.getenv("CONNECT_APP_ID")
@@ -111,8 +79,15 @@ jobs:
           if (!nzchar(account)) stop("CONNECT_ACCOUNT is not set")
           if (!nzchar(app_id)) stop("CONNECT_APP_ID is not set")
 
+          rsconnect::setAccountInfo(
+            name = account,
+            token = Sys.getenv("CONNECT_TOKEN"),
+            secret = Sys.getenv("CONNECT_SECRET"),
+            server = server
+          )
+
           rsconnect::deployApp(
-            appDir = "launcher",
+            appDir = "app",
             server = server,
             account = account,
             appId = as.integer(app_id),

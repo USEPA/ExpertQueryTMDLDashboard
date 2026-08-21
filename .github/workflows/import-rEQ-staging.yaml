@@ -1,7 +1,9 @@
-name: import data
+name: import data staging
 
 on:
   push:
+    branches:
+      - staging
   schedule:
     - cron: '15 06 * * 0'
   workflow_dispatch:
@@ -45,27 +47,26 @@ jobs:
 
       - name: Import org data
         run: |
-          Rscript launcher/scripts/importEQdata.R
+          Rscript scripts/importEQdata.R
 
       - name: Debug output files
         run: |
           pwd
           ls -la
-          ls -la launcher || true
-          ls -la launcher/extdata || true
-          ls -la launcher/www || true
+          ls -la app || true
+          ls -la app/data || true
 
       - name: Commit results
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
-          if git diff --quiet -- launcher/extdata/importEQdata.RData launcher/www/RMD_data.RData; then
+          if git diff --quiet -- app/data/importEQdata.RData app/data/RMD_data.RData; then
             echo "No changes to commit"
             exit 0
           fi
 
-          git add launcher/data/EQ_data.RData
-          git add launcher/data/RMD_data.RData
+          git add app/data/EQ_data.RData
+          git add app/data/RMD_data.RData
           git commit -m "Data updated"
           git push origin HEAD:${GITHUB_REF_NAME}
