@@ -62,12 +62,12 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
-          if git diff --quiet -- launcher/extdata/importEQdata.RData launcher/www/RMD_data.RData; then
+          if git diff --quiet -- app/data/importEQdata.RData app/data/RMD_data.RData; then
             echo "No changes to commit"
             exit 0
           fi
 
-          git add scripts/data/EQ_data.RData
-          git add scripts/data/RMD_data.RData
+          git add app/data/EQ_data.RData
+          git add app/data/RMD_data.RData
           git commit -m "Data updated"
           git push origin HEAD:${GITHUB_REF_NAME}
