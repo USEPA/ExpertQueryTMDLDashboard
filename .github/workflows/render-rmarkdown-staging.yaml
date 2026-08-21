@@ -1,14 +1,11 @@
 name: render-rmarkdown-staging
 
 on:
-  push:
-    branches:
-      - staging
+  workflow_dispatch:
   workflow_run:
     workflows: ["import data staging"]
     types:
       - completed
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,8 +14,7 @@ jobs:
   render-rmarkdown:
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'push' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
 
     runs-on: ubuntu-latest
 
@@ -26,6 +22,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
+          ref: staging
           fetch-depth: 0
 
       - name: Setup Pandoc
@@ -47,36 +44,43 @@ jobs:
             libfreetype6-dev \
             libharfbuzz-dev \
             libfribidi-dev \
-            pkg-config
+            pkg-config \
+            pandoc
 
       - name: Install R packages
         run: |
           Rscript - <<'RS'
-          options(repos = c(CRAN = "https://cloud.r-project.org"))
-          pkgs <- c("rmarkdown", "knitr", "dplyr", "DiagrammeR", "htmlwidgets")
-          install.packages(pkgs, dependencies = TRUE)
-          cat("\nInstalled packages:\n")
-          print(pkgs)
-          RS
+          options(repos = c(CRAN = "https://packagemanager.posit.co/cran/__linux__/noble/latest"))
 
-      - name: Check rmarkdown install
-        run: |
-          Rscript - <<'RS'
+          cat("R version:\n")
+          print(R.version.string)
+
           cat("Library paths:\n")
           print(.libPaths())
-          cat("Installed?\n")
-          print(requireNamespace("rmarkdown", quietly = TRUE))
+
+          pkgs <- c("rmarkdown", "knitr", "dplyr", "DiagrammeR", "htmlwidgets")
+
+          cat("Installing packages:\n")
+          print(pkgs)
+
+          install.packages(pkgs, dependencies = TRUE)
+
+          cat("Installed packages after install:\n")
+          print(intersect(pkgs, rownames(installed.packages())))
+
           if (!requireNamespace("rmarkdown", quietly = TRUE)) {
-            stop("rmarkdown is still not installed")
+            stop("rmarkdown failed to install")
           }
+
+          cat("rmarkdown version:\n")
           print(packageVersion("rmarkdown"))
           RS
 
-      - name: Show launcher files for debugging
+      - name: Show app files for debugging
         shell: bash
         run: |
           echo "Working directory: $(pwd)"
-          find launcher -maxdepth 4 -type f | sort
+          find app -maxdepth 4 -type f | sort
 
       - name: Render Rmarkdown file
         run: |
