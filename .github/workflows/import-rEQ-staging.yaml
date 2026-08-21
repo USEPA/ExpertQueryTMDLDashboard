@@ -55,7 +55,6 @@ jobs:
           ls -la
           ls -la app || true
           ls -la app/data || true
-          ls -la app/www || true
 
       - name: Commit results
         run: |
