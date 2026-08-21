@@ -71,6 +71,22 @@ jobs:
           echo "Working directory: $(pwd)"
           find app -maxdepth 4 -type f | sort
 
+      - name: Debug RMD data file before render
+        run: |
+          pwd
+          ls -lah
+          ls -lah app || true
+          ls -lah app/data || true
+          find app/data -maxdepth 1 -type f | sort || true
+          Rscript - <<'RS'
+          f <- "app/data/RMD_data.RData"
+          cat("exists:", file.exists(f), "\n")
+          if (file.exists(f)) {
+            cat("size:", file.info(f)$size, "\n")
+            cat("can read:", file.access(f, 4) == 0, "\n")
+          }
+          RS
+
       - name: Render Rmarkdown file
         run: |
           Rscript -e 'rmarkdown::render(input = "scripts/DataCleaning.Rmd")'
